@@ -17,6 +17,21 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('student'); // system_admin, admin, teacher, student, master_student, applicant
+            $table->string('role_title')->nullable(); // e.g. "Sistem Administratoru", "Kafedra Müdiri", "Dosent", "Bakalavr (IV Kurs)"
+            $table->string('student_id')->nullable()->unique(); // e.g. STU-2026-1042
+            $table->string('staff_id')->nullable()->unique(); // e.g. EMP-2024-0018
+            $table->string('phone')->nullable();
+            $table->string('avatar')->nullable();
+            $table->unsignedBigInteger('faculty_id')->nullable();
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->string('degree_level')->nullable(); // bachelor, master, phd, staff
+            $table->decimal('gpa', 3, 2)->default(0.00);
+            $table->integer('earned_credits')->default(0);
+            $table->string('status')->default('active'); // active, graduated, suspended, pending
+            $table->text('bio')->nullable();
+            $table->integer('admission_year')->nullable();
+            $table->json('permissions')->nullable(); // Custom granular permissions override
             $table->rememberToken();
             $table->timestamps();
         });
