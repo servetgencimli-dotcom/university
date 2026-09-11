@@ -151,7 +151,13 @@
                     <div class="glass-card" style="padding: 1rem 1.25rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                             <span class="font-mono" style="font-size: 0.85rem; color: #818cf8; font-weight: 700;">{{ $inv->invoice_number }}</span>
-                            <span class="badge badge-success"><i class="fa-solid fa-check"></i> Ödənilib</span>
+                            @if($inv->status === 'paid')
+                                <span class="badge badge-success"><i class="fa-solid fa-check"></i> Ödənilib</span>
+                            @elseif($inv->status === 'overdue')
+                                <span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Gecikib</span>
+                            @else
+                                <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Ödənilməyib</span>
+                            @endif
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
                             <span style="color: #94a3b8;">{{ $inv->semester_term }}</span>

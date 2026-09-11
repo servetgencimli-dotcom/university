@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('portal_title', @yield('title', 'Tələbə & Akademik Portalı — Xəzər Universiteti'))</title>
+    <title>@yield('portal_title', 'Tələbə & Akademik Portalı — Xəzər Universiteti')</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -261,7 +261,7 @@
                     <a href="{{ route('portal.registration.index') }}" class="nav-link {{ request()->routeIs('portal.registration.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-book-bookmark text-sky-400"></i> Fənn Seçimi (Registration)
                     </a>
-                    <a href="{{ route('portal.transcript.index') }}" class="nav-link {{ request()->routeIs('portal.transcript.*') ? 'active' : '' }}">
+                    <a href="{{ route('portal.transcript') }}" class="nav-link {{ request()->routeIs('portal.transcript*') ? 'active' : '' }}">
                         <i class="fa-solid fa-file-invoice text-emerald-400"></i> Rəsmi Transkript (AZ/EN)
                     </a>
                     <a href="{{ route('portal.finance.index') }}" class="nav-link {{ request()->routeIs('portal.finance.*') ? 'active' : '' }}">
@@ -281,10 +281,10 @@
                     <a href="{{ route('portal.admin.dim.index') }}" class="nav-link {{ request()->routeIs('portal.admin.dim.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-file-signature text-amber-400"></i> DİM Qəbul Reyestri
                     </a>
-                    <a href="{{ route('portal.admin_cms.index') }}" class="nav-link {{ request()->routeIs('portal.admin_cms.*') ? 'active' : '' }}">
+                    <a href="{{ route('portal.admin.cms.index') }}" class="nav-link {{ request()->routeIs('portal.admin.cms.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-sliders text-indigo-400"></i> CMS & Semestrlər
                     </a>
-                    <a href="{{ route('portal.audit_logs.index') }}" class="nav-link {{ request()->routeIs('portal.audit_logs.*') ? 'active' : '' }}">
+                    <a href="{{ route('portal.admin.audit-logs') }}" class="nav-link {{ request()->routeIs('portal.admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fa-solid fa-shield-halved text-emerald-400"></i> Audit & Təhlükəsizlik Jurnalı
                     </a>
 
@@ -330,7 +330,17 @@
         <!-- Topbar -->
         <header style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; padding: 1rem 2rem; position: sticky; top: {{ session()->has('impersonator_id') ? '48px' : '0' }}; z-index: 30; display: flex; justify-content: space-between; align-items: center; color: #0f172a;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <h1 class="font-heading" style="font-size: 1.25rem; font-weight: 700; color: #0f172a;">@yield('portal_title', @yield('header_title', 'İdarəetmə Paneli'))</h1>
+                <h1 class="font-heading" style="font-size: 1.25rem; font-weight: 700; color: #0f172a;">
+                    @if(trim($__env->yieldContent('portal_title')))
+                        @yield('portal_title')
+                    @elseif(trim($__env->yieldContent('header_title')))
+                        @yield('header_title')
+                    @elseif(trim($__env->yieldContent('title')))
+                        @yield('title')
+                    @else
+                        İdarəetmə Paneli
+                    @endif
+                </h1>
                 <span style="color: #cbd5e1;">|</span>
                 <span style="font-size: 0.85rem; color: #64748b;"><i class="fa-regular fa-clock"></i> {{ now()->translatedFormat('l, d F Y') }}</span>
             </div>

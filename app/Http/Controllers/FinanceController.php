@@ -19,7 +19,7 @@ class FinanceController extends Controller
         $user = Auth::user();
         $invoices = TuitionInvoice::where('student_id', $user->id)->latest()->get();
 
-        $totalDebt = $invoices->where('status', 'pending')->sum('amount');
+        $totalDebt = $invoices->whereIn('status', ['pending', 'unpaid', 'overdue'])->sum('amount');
         $totalPaid = $invoices->where('status', 'paid')->sum('amount');
 
         return view('portal.finance', compact('user', 'invoices', 'totalDebt', 'totalPaid'));

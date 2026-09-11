@@ -41,19 +41,24 @@ class AdminCmsController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string',
-            'summary' => 'required|string',
-            'content' => 'required|string',
+            'summary' => 'nullable|string',
+            'excerpt' => 'nullable|string',
+            'content' => 'nullable|string',
+            'body' => 'nullable|string',
             'is_featured' => 'nullable|boolean',
         ]);
+
+        $summary = $validated['summary'] ?? $validated['excerpt'] ?? Str::limit(strip_tags($validated['content'] ?? $validated['body'] ?? ''), 150);
+        $content = $validated['content'] ?? $validated['body'] ?? $summary;
 
         $article = NewsArticle::create([
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']) . '-' . rand(100, 999),
             'category' => $validated['category'],
-            'summary' => $validated['summary'],
-            'content' => $validated['content'],
+            'summary' => $summary,
+            'content' => $content,
             'is_featured' => $request->boolean('is_featured'),
-            'published_at' => now(),
+            'published_at' => $request->input('published_at') ? now()->parse($request->published_at) : now(),
         ]);
 
         ActivityLog::log('CMS_NEWS_CREATED', "Yeni xəbər yaradıldı: {$article->title}", $article);
@@ -71,11 +76,19 @@ class AdminCmsController extends Controller
             'category' => 'required|string',
             'description' => 'required|string',
             'speaker_names' => 'nullable|string',
-            'venue' => 'required|string',
-            'start_time' => 'required|date',
-            'end_time' => 'required|date|after:start_time',
-            'capacity' => 'required|integer|min:10',
+            'venue' => 'nullable|string',
+            'location' => 'nullable|string',
+            'start_time' => 'nullable|date',
+            'starts_at' => 'nullable|date',
+            'end_time' => 'nullable|date',
+            'ends_at' => 'nullable|date',
+            'capacity' => 'nullable|integer|min:1',
         ]);
+
+        $venue = $validated['venue'] ?? $validated['location'] ?? 'Neftçilər Korpusu';
+        $startTime = $validated['start_time'] ?? $validated['starts_at'] ?? now()->addDays(7);
+        $endTime = $validated['end_time'] ?? $validated['ends_at'] ?? now()->addDays(7)->addHours(2);
+        $capacity = $validated['capacity'] ?? 100;
 
         $event = Event::create([
             'title' => $validated['title'],
@@ -83,10 +96,10 @@ class AdminCmsController extends Controller
             'category' => $validated['category'],
             'description' => $validated['description'],
             'speaker_names' => $validated['speaker_names'] ?? null,
-            'venue' => $validated['venue'],
-            'start_time' => $validated['start_time'],
-            'end_time' => $validated['end_time'],
-            'capacity' => $validated['capacity'],
+            'venue' => $venue,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'capacity' => $capacity,
             'is_featured' => true,
         ]);
 
@@ -152,5 +165,20 @@ class AdminCmsController extends Controller
         ActivityLog::log('ACADEMIC_TERM_UPDATED', "{$term->name} üçün fənn qeydiyyatı pəncərəsi {$status} edildi.", $term);
 
         return back()->with('success', "{$term->name} üçün fənn qeydiyyatı pəncərəsi {$status} edildi.");
+    }
+
+    /**
+     * Set term as current active semester.
+     */
+    public function setCurrentTerm(Request $request, $termId)
+    {
+        AcademicTerm::where('is_current', true)->update(['is_current' => false]);
+        $term = AcademicTerm::findOrFail($termId);
+        $term->is_current = true;
+        $term->save();
+
+        ActivityLog::log('ACADEMIC_TERM_CURRENT_CHANGED', "{$term->name} cari semestr olaraq təyin edildi.", $term);
+
+        return back()->with('success', "{$term->name} cari semestr olaraq təyin edildi.");
     }
 }

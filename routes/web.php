@@ -115,7 +115,13 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
         Route::post('/cms/courses', [\App\Http\Controllers\AdminCmsController::class, 'storeCourse'])->name('cms.courses');
         Route::post('/cms/sections', [\App\Http\Controllers\AdminCmsController::class, 'storeSection'])->name('cms.sections');
         Route::post('/cms/terms/{termId}/toggle', [\App\Http\Controllers\AdminCmsController::class, 'toggleRegistration'])->name('cms.terms.toggle');
+        Route::post('/cms/terms/{termId}/current', [\App\Http\Controllers\AdminCmsController::class, 'setCurrentTerm'])->name('cms.terms.set_current');
     });
+
+    // Convenient Aliases
+    Route::get('/transcript', [\App\Http\Controllers\TranscriptController::class, 'show'])->name('transcript.index');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
 
     // Teacher & Admin grading mutation (protected by role middleware & policy)
     Route::post('/grades/{id}', [PortalController::class, 'updateGrade'])

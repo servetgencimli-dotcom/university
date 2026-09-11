@@ -40,14 +40,14 @@
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t border-white/10 flex items-center space-x-2">
-                        <form method="POST" action="{{ route('portal.admin_cms.terms.toggle_registration', $term->id) }}" class="flex-1">
+                        <form method="POST" action="{{ route('portal.admin.cms.terms.toggle', $term->id) }}" class="flex-1">
                             @csrf
-                            <button type="submit" class="w-full py-2 px-3 text-xs font-bold rounded-xl transition {{ $term->is_registration_open ? 'bg-red-600/80 hover:bg-red-600 text-white' : 'bg-emerald-600/90 hover:bg-emerald-600 text-white' }}">
-                                {{ $term->is_registration_open ? 'Qeydiyyatı Bağla' : 'Qeydiyyatı Aç' }}
+                            <button type="submit" class="w-full py-2 px-3 text-xs font-bold rounded-xl transition {{ $term->registration_open ? 'bg-red-600/80 hover:bg-red-600 text-white' : 'bg-emerald-600/90 hover:bg-emerald-600 text-white' }}">
+                                {{ $term->registration_open ? 'Qeydiyyatı Bağla' : 'Qeydiyyatı Aç' }}
                             </button>
                         </form>
                         @if(!$term->is_current)
-                            <form method="POST" action="{{ route('portal.admin_cms.terms.set_current', $term->id) }}">
+                            <form method="POST" action="{{ route('portal.admin.cms.terms.set_current', $term->id) }}">
                                 @csrf
                                 <button type="submit" class="py-2 px-3 text-xs font-bold bg-white/20 hover:bg-white/30 text-white rounded-xl transition" title="Cari semestr et">
                                     Cari Et
@@ -68,7 +68,7 @@
                 <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
                 Yeni Universitet Xəbəri Dərc Et
             </h2>
-            <form method="POST" action="{{ route('portal.admin_cms.news.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('portal.admin.cms.news') }}" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Xəbər Başlığı *</label>
@@ -91,12 +91,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Qısa Xülasə (Excerpt) *</label>
-                    <textarea name="excerpt" rows="2" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Qısa Xülasə (Summary) *</label>
+                    <textarea name="summary" rows="2" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tam Məzmun (HTML/Text) *</label>
-                    <textarea name="body" rows="4" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tam Məzmun (Content) *</label>
+                    <textarea name="content" rows="4" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
                 <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
                     Xəbəri Dərc Et
@@ -110,7 +110,7 @@
                 <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 Yeni Universitet Tədbiri Əlavə Et
             </h2>
-            <form method="POST" action="{{ route('portal.admin_cms.events.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('portal.admin.cms.events') }}" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tədbirin Adı *</label>
@@ -118,28 +118,31 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Məkan (Location) *</label>
-                        <input type="text" name="location" placeholder="Məs. Mərmər Salon, Neftçilər Korpusu" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Məkan (Venue) *</label>
+                        <input type="text" name="venue" placeholder="Məs. Mərmər Salon, Neftçilər Korpusu" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Kateqoriya *</label>
                         <select name="category" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="Konfrans">Konfrans</option>
-                            <option value="Seminar">Seminar</option>
-                            <option value="Mədəniyyət">Mədəniyyət</option>
-                            <option value="Karyera">Karyera</option>
-                            <option value="İdman">İdman</option>
+                            <option value="academic">Akademik / Konfrans</option>
+                            <option value="career">Karyera</option>
+                            <option value="cultural">Mədəniyyət</option>
+                            <option value="sports">İdman</option>
                         </select>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Başlama Vaxtı *</label>
-                        <input type="datetime-local" name="starts_at" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                        <input type="datetime-local" name="start_time" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bitmə Vaxtı</label>
-                        <input type="datetime-local" name="ends_at" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bitmə Vaxtı *</label>
+                        <input type="datetime-local" name="end_time" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tutum (Nəfər) *</label>
+                        <input type="number" name="capacity" value="100" min="10" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div>

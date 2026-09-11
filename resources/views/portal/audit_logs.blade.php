@@ -18,7 +18,7 @@
 
     <!-- Filters -->
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-        <form method="GET" action="{{ route('portal.audit_logs.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form method="GET" action="{{ route('portal.admin.audit-logs') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Açar Söz / Təsvir</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Axtarış..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -45,7 +45,7 @@
                 <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
                     Filtri tətbiq et
                 </button>
-                <a href="{{ route('portal.audit_logs.index') }}" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <a href="{{ route('portal.admin.audit-logs') }}" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
                     Sıfırla
                 </a>
             </div>

@@ -31,6 +31,11 @@ class AcademicTerm extends Model
         ];
     }
 
+    public function getIsRegistrationOpenAttribute(): bool
+    {
+        return (bool) $this->registration_open;
+    }
+
     public static function current(): ?self
     {
         return static::where('is_current', true)->first() ?? static::latest()->first();

@@ -168,15 +168,20 @@ class User extends Authenticatable
     public function hasUnpaidDebt(): bool
     {
         return $this->tuitionInvoices()
-            ->where('status', 'pending')
-            ->where('due_date', '<', now())
+            ->where(function ($q) {
+                $q->where('status', 'overdue')
+                    ->orWhere(function ($sq) {
+                        $sq->whereIn('status', ['pending', 'unpaid'])
+                            ->where('due_date', '<', now());
+                    });
+            })
             ->exists();
     }
 
     public function totalDebtAmount(): float
     {
         return (float) $this->tuitionInvoices()
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'unpaid', 'overdue'])
             ->sum('amount');
     }
 }
