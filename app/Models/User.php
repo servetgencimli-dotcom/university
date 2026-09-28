@@ -184,4 +184,19 @@ class User extends Authenticatable
             ->whereIn('status', ['pending', 'unpaid', 'overdue'])
             ->sum('amount');
     }
+
+    /**
+     * Dynamic credit limit based on academic GPA standing.
+     */
+    public function getMaxCreditLimit(): int
+    {
+        $gpa = (float) ($this->gpa ?? 0);
+        if ($gpa >= 3.50) {
+            return 36; // High GPA Honor Overload
+        } elseif ($gpa > 0 && $gpa < 2.00) {
+            return 24; // Academic Probation limit
+        }
+
+        return 30; // Standard credit limit
+    }
 }

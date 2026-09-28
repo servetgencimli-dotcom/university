@@ -2,21 +2,32 @@
 
 namespace Database\Seeders;
 
+use App\Models\AcademicTerm;
+use App\Models\ActivityLog;
 use App\Models\AdmissionsApplication;
 use App\Models\ApplicationDocument;
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
+use App\Models\AttendanceRecord;
 use App\Models\CampusBuilding;
 use App\Models\Course;
+use App\Models\CourseAnnouncement;
+use App\Models\CourseMaterial;
 use App\Models\CourseSection;
 use App\Models\Department;
 use App\Models\Enrollment;
 use App\Models\Event;
 use App\Models\Faculty;
+use App\Models\GradeComponent;
 use App\Models\NewsArticle;
 use App\Models\Permission;
 use App\Models\Program;
 use App\Models\ResearchPaper;
 use App\Models\Role;
+use App\Models\StudentAppeal;
+use App\Models\StudentGradeItem;
 use App\Models\StudentThesis;
+use App\Models\SystemNotification;
 use App\Models\TuitionInvoice;
 use App\Models\User;
 use App\Services\GradingService;
@@ -555,7 +566,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 1. Academic Terms
-        $termFall2025 = \App\Models\AcademicTerm::create([
+        $termFall2025 = AcademicTerm::create([
             'name' => '2025 Payız Semestri',
             'code' => '2025-Payiz',
             'start_date' => '2025-09-15',
@@ -564,7 +575,7 @@ class DatabaseSeeder extends Seeder
             'registration_open' => false,
         ]);
 
-        $termSpring2026 = \App\Models\AcademicTerm::create([
+        $termSpring2026 = AcademicTerm::create([
             'name' => '2026 Bahar Semestri',
             'code' => '2026-Bahar',
             'start_date' => '2026-02-15',
@@ -573,7 +584,7 @@ class DatabaseSeeder extends Seeder
             'registration_open' => true,
         ]);
 
-        $termSummer2026 = \App\Models\AcademicTerm::create([
+        $termSummer2026 = AcademicTerm::create([
             'name' => '2026 Yay Semestri',
             'code' => '2026-Yay',
             'start_date' => '2026-07-05',
@@ -849,7 +860,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // LMS Content for Section 1 (CS101)
-        $assign1 = \App\Models\Assignment::create([
+        $assign1 = Assignment::create([
             'course_section_id' => $sec1->id,
             'title' => 'Laboratoriya İşi 1: İkili Axtarış Ağaclarının Balanslaşdırılması',
             'description' => 'AVL və Red-Black ağaclarının Java və ya C++ dilində reallaşdırılması və O(log N) axtarış müddətinin benchmark analizi.',
@@ -857,7 +868,7 @@ class DatabaseSeeder extends Seeder
             'due_date' => now()->addDays(7),
         ]);
 
-        \App\Models\AssignmentSubmission::create([
+        AssignmentSubmission::create([
             'assignment_id' => $assign1->id,
             'student_id' => $studentMurad->id,
             'submission_text' => 'Hörmətli professor, AVL ağacı və rotasiya testləri əlavə olunmuşdur.',
@@ -867,7 +878,7 @@ class DatabaseSeeder extends Seeder
             'submitted_at' => now()->subDays(2),
         ]);
 
-        \App\Models\CourseMaterial::create([
+        CourseMaterial::create([
             'course_section_id' => $sec1->id,
             'title' => 'Mühazirə 1: Asimptotik Analiz və Big-O Notasiyası',
             'type' => 'file',
@@ -875,7 +886,7 @@ class DatabaseSeeder extends Seeder
             'is_published' => true,
         ]);
 
-        \App\Models\CourseAnnouncement::create([
+        CourseAnnouncement::create([
             'course_section_id' => $sec1->id,
             'title' => 'Kollokvium Tarixi və İmtahan Qaydaları',
             'content' => 'Hörmətli tələbələr, 1-ci aralıq kollokvium növbəti həftənin çərşənbə günü Lab 402 auditoriyasında keçiriləcəkdir.',
@@ -884,7 +895,7 @@ class DatabaseSeeder extends Seeder
 
         // Per-Session Attendance Records for Murad
         for ($i = 1; $i <= 5; $i++) {
-            \App\Models\AttendanceRecord::create([
+            AttendanceRecord::create([
                 'enrollment_id' => $enr1->id,
                 'session_date' => now()->subDays(6 - $i)->toDateString(),
                 'status' => $i == 4 ? 'late' : 'present',
@@ -892,8 +903,94 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // 9. System Notifications
-        \App\Models\SystemNotification::create([
+        // 9. Grade Distribution & Score Breakdown Seed
+        $comp1 = GradeComponent::create([
+            'course_section_id' => $sec1->id,
+            'name' => 'Davamiyyət və Dərsdə Fəallıq',
+            'max_score' => 10.00,
+            'type' => 'attendance',
+            'order_index' => 1,
+        ]);
+
+        $comp2 = GradeComponent::create([
+            'course_section_id' => $sec1->id,
+            'name' => 'Seminar və Məşğələ Dərsləri',
+            'max_score' => 10.00,
+            'type' => 'seminar',
+            'order_index' => 2,
+        ]);
+
+        $comp3 = GradeComponent::create([
+            'course_section_id' => $sec1->id,
+            'name' => 'Laboratoriya və Sərbəst İşlər',
+            'max_score' => 10.00,
+            'type' => 'assignment',
+            'order_index' => 3,
+        ]);
+
+        $comp4 = GradeComponent::create([
+            'course_section_id' => $sec1->id,
+            'name' => 'Kollokvium / Aralıq İmtahan',
+            'max_score' => 20.00,
+            'type' => 'midterm',
+            'order_index' => 4,
+        ]);
+
+        $comp5 = GradeComponent::create([
+            'course_section_id' => $sec1->id,
+            'name' => 'Final İmtahanı',
+            'max_score' => 50.00,
+            'type' => 'final',
+            'order_index' => 5,
+        ]);
+
+        // Student Component Scores for Murad in CS101
+        StudentGradeItem::create([
+            'enrollment_id' => $enr1->id,
+            'grade_component_id' => $comp1->id,
+            'score' => 9.50,
+        ]);
+        StudentGradeItem::create([
+            'enrollment_id' => $enr1->id,
+            'grade_component_id' => $comp2->id,
+            'score' => 9.00,
+        ]);
+        StudentGradeItem::create([
+            'enrollment_id' => $enr1->id,
+            'grade_component_id' => $comp3->id,
+            'score' => 9.50,
+        ]);
+        StudentGradeItem::create([
+            'enrollment_id' => $enr1->id,
+            'grade_component_id' => $comp4->id,
+            'score' => 18.50,
+        ]);
+        StudentGradeItem::create([
+            'enrollment_id' => $enr1->id,
+            'grade_component_id' => $comp5->id,
+            'score' => 45.00,
+        ]);
+
+        // Recalculate Murad's total from components
+        $enr1->recalculateTotalFromComponents();
+
+        // Sample Student Appeal for Murad
+        StudentAppeal::create([
+            'student_id' => $studentMurad->id,
+            'course_section_id' => $sec1->id,
+            'enrollment_id' => $enr1->id,
+            'type' => 'grade_objection',
+            'subject' => 'Final İmtahanı 3-cü sualının qiymətləndirilməsinə etiraz',
+            'reason' => 'Hörmətli komissiya, 3-cü sualda dinamik proqramlaşdırma üzrə memoization yanaşması tam düzgün izah olunsa da, 2 bal kəsilmişdir. Xahiş edirəm təkrar baxılsın.',
+            'status' => 'approved',
+            'reviewed_by' => $teacherFakhraddin->id,
+            'reviewer_notes' => 'Yazı işi komissiya tərəfindən təkrar yoxlanıldı, texniki nüans nəzərə alınaraq bal 45-ə qaldırıldı.',
+            'submitted_at' => now()->subDays(2),
+            'responded_at' => now()->subDay(),
+        ]);
+
+        // 10. System Notifications
+        SystemNotification::create([
             'user_id' => $studentMurad->id,
             'title' => '2026 Bahar Semestri Fənn Qeydiyyatı Başladı',
             'message' => 'Fənn seçimi portalı aktivdir. Zəhmət olmasa tədris planınıza uyğun fənləri seçin.',
@@ -902,7 +999,7 @@ class DatabaseSeeder extends Seeder
             'is_read' => false,
         ]);
 
-        \App\Models\SystemNotification::create([
+        SystemNotification::create([
             'user_id' => $studentMurad->id,
             'title' => 'Təhsil Haqqı Ödənişi Təsdiqləndi',
             'message' => 'KU-INV-2026-0042 nömrəli faktura üzrə 2500 AZN ödənişiniz uğurla qəbul edildi.',
@@ -911,11 +1008,11 @@ class DatabaseSeeder extends Seeder
             'is_read' => true,
         ]);
 
-        // 10. Audit Log Initial Seed
-        \App\Models\ActivityLog::create([
+        // 11. Audit Log Initial Seed
+        ActivityLog::create([
             'user_id' => $systemAdmin->id,
             'action' => 'system.initialized',
-            'subject_type' => \App\Models\User::class,
+            'subject_type' => User::class,
             'subject_id' => $systemAdmin->id,
             'description' => 'Xəzər Universiteti Rəqəmsal İdarəetmə Sistemi uğurla başladıldı və ilkin konfiqurasiya tamamlandı.',
             'ip_address' => '127.0.0.1',

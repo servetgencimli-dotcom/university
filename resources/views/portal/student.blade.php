@@ -1,9 +1,169 @@
 @extends('layouts.portal')
 
-@section('title', 'Tələbə Şəxsi Kabineti')
+@section('title', 'Tələbə Şəxsi Kabineti — Xəzər Universiteti')
 @section('header_title', 'Tələbə Portalı & Elektron Kabinet')
 
 @section('content')
+
+    <!-- Top Widgets matching Student Portal Header (AKTİV SEMESTR, SON GİRİŞ & MENYU) -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: Aktiv Semestr with Quick Dropdown/Menu -->
+        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid #00A3E0; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                        AKTİV SEMESTR
+                    </div>
+                    <div class="font-heading" style="font-size: 1.6rem; color: #fff;">
+                        2026 Bahar Semestri
+                    </div>
+                    <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.25rem;">
+                        Xəzər Universiteti • Bakalavriat Səviyyəsi
+                    </div>
+                </div>
+
+                <div style="width: 48px; height: 48px; background: rgba(0, 163, 224, 0.15); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #38bdf8;">
+                    <i class="fa-solid fa-building-columns"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Sistemə Son Giriş -->
+        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid #10b981;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+                        SİSTEMƏ SON GİRİŞ
+                    </div>
+                    <div class="font-heading font-mono" style="font-size: 1.6rem; color: #fff;">
+                        {{ now()->format('d.m.Y H:i') }}
+                    </div>
+                    <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.25rem;">
+                        İP Ünvan: <span class="font-mono text-emerald-400">127.0.0.1 (Təhlükəsiz Giriş)</span>
+                    </div>
+                </div>
+
+                <div style="width: 48px; height: 48px; background: rgba(16, 185, 129, 0.15); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #34d399;">
+                    <i class="fa-solid fa-shield-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TƏLƏBƏ ƏSAS XİDMƏTLƏRİ VƏ MENYU BLOKLARI (ŞƏKİLDƏKİ BÜTÜN FUNKSİYALAR) -->
+    <div class="glass-panel" style="padding: 1.75rem; margin-bottom: 2.5rem; background: linear-gradient(135deg, rgba(12, 24, 44, 0.9), rgba(6, 17, 36, 0.95)); border: 1px solid rgba(0, 163, 224, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+                <h3 class="font-heading" style="font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fa-solid fa-grip text-sky-400"></i> Tələbə Portalı Əsas Xidmətləri
+                </h3>
+                <div style="font-size: 0.85rem; color: #94a3b8;">Tədris, qiymətlər, imtahan və ərizə əməliyyatlarınıza bir toxunuşla keçid edin</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;">
+            
+            <!-- 1. Dərs cədvəli -->
+            <a href="{{ route('portal.schedule') }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(0, 163, 224, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #38bdf8;">
+                    <i class="fa-solid fa-table-cells"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Dərs cədvəli</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Həftəlik dərslər və otaqlar</div>
+                </div>
+            </a>
+
+            <!-- 2. Semestr qiymətləri -->
+            <a href="{{ route('portal.semester-grades') }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease; border-color: rgba(52, 211, 153, 0.3);">
+                <div style="width: 42px; height: 42px; background: rgba(16, 185, 129, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #34d399;">
+                    <i class="fa-solid fa-arrow-down-wide-short"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Semestr qiymətləri</div>
+                    <div style="font-size: 0.75rem; color: #34d399;">Bal bölgüsü və nəticələr</div>
+                </div>
+            </a>
+
+            <!-- 3. Tamamlama imtahanına müraciət -->
+            <a href="{{ route('portal.appeals.index', ['type' => 'makeup_exam']) }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(245, 158, 11, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fbbf24;">
+                    <i class="fa-solid fa-user-pen"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Tamamlama imtahanı</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Kəsir imtahanı müraciəti</div>
+                </div>
+            </a>
+
+            <!-- 4. İmtahan nəticəsinə etiraz et -->
+            <a href="{{ route('portal.appeals.index', ['type' => 'grade_objection']) }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease; border-color: rgba(239, 68, 68, 0.3);">
+                <div style="width: 42px; height: 42px; background: rgba(239, 68, 68, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #f87171;">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">İmtahana etiraz et</div>
+                    <div style="font-size: 0.75rem; color: #fca5a5;">Apellyasiya ərizəsi</div>
+                </div>
+            </a>
+
+            <!-- 5. Cərimə imtahanına müraciət -->
+            <a href="{{ route('portal.appeals.index', ['type' => 'penalty_exam']) }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(249, 115, 22, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fb923c;">
+                    <i class="fa-solid fa-gavel"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Cərimə imtahanı</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Təkrar imtahan müraciəti</div>
+                </div>
+            </a>
+
+            <!-- 6. Dekanlığa müraciət -->
+            <a href="{{ route('portal.appeals.index', ['type' => 'dean_petition']) }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(168, 85, 247, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #c084fc;">
+                    <i class="fa-solid fa-building-user"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Dekanlığa müraciət</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Arayış və rəsmi ərizə</div>
+                </div>
+            </a>
+
+            <!-- 7. Transkript -->
+            <a href="{{ route('portal.transcript') }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(20, 184, 166, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #2dd4bf;">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Transkript</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Rəsmi qiymət cədvəli</div>
+                </div>
+            </a>
+
+            <!-- 8. Ödəniş əməliyyatları -->
+            <a href="{{ route('portal.finance.index') }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(234, 179, 8, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #facc15;">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Ödəniş əməliyyatları</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Təhsil haqqı & qəbzlər</div>
+                </div>
+            </a>
+
+            <!-- 9. Kursun Davamı Məlumatı -->
+            <a href="{{ route('portal.attendance-report') }}" class="glass-card" style="padding: 1.2rem; text-decoration: none; display: flex; align-items: center; gap: 1rem; transition: all 0.2s ease;">
+                <div style="width: 42px; height: 42px; background: rgba(59, 130, 246, 0.15); border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #60a5fa;">
+                    <i class="fa-solid fa-people-group"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Kursun Davamı Məlumatı</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8;">Davamiyyət & qayıblar</div>
+                </div>
+            </a>
+
+        </div>
+    </div>
 
     <!-- Top Student Summary & Digital Student ID Card -->
     <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem; margin-bottom: 2.5rem; align-items: stretch;">
@@ -78,9 +238,14 @@
 
     <!-- Section: Current Semester Courses & Grades -->
     <div id="grades-section" class="glass-panel" style="padding: 2rem; margin-bottom: 2.5rem;">
-        <h3 class="font-heading" style="font-size: 1.35rem; color: #fff; margin-bottom: 1.25rem;">
-            <i class="fa-solid fa-book-open text-indigo-400"></i> Cari Semestr Fənləri və Ballarım
-        </h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 class="font-heading" style="font-size: 1.35rem; color: #fff;">
+                <i class="fa-solid fa-book-open text-indigo-400"></i> Cari Semestr Fənləri və Ballarım
+            </h3>
+            <a href="{{ route('portal.semester-grades') }}" class="btn btn-outline" style="font-size: 0.8rem;">
+                <i class="fa-solid fa-eye"></i> Detallı Bal Bölgüsünə Bax
+            </a>
+        </div>
 
         <div style="overflow-x: auto;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
@@ -90,8 +255,8 @@
                         <th style="padding: 0.75rem 1rem;">FƏNN ADI</th>
                         <th style="padding: 0.75rem 1rem;">MÜƏLLİM</th>
                         <th style="padding: 0.75rem 1rem;">KREDİT</th>
-                        <th style="padding: 0.75rem 1rem;">ARALIQ (50)</th>
-                        <th style="padding: 0.75rem 1rem;">FINAL (50)</th>
+                        <th style="padding: 0.75rem 1rem;">ARALIQ</th>
+                        <th style="padding: 0.75rem 1rem;">FINAL</th>
                         <th style="padding: 0.75rem 1rem;">YEKUN</th>
                         <th style="padding: 0.75rem 1rem;">HƏRFİ</th>
                     </tr>
@@ -123,9 +288,12 @@
         
         <!-- Schedule -->
         <div id="schedule-section" class="glass-panel" style="padding: 2rem;">
-            <h3 class="font-heading" style="font-size: 1.35rem; color: #fff; margin-bottom: 1.25rem;">
-                <i class="fa-solid fa-calendar-week text-cyan-400"></i> Həftəlik Dərs Cədvəli
-            </h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h3 class="font-heading" style="font-size: 1.35rem; color: #fff;">
+                    <i class="fa-solid fa-calendar-week text-cyan-400"></i> Həftəlik Dərs Cədvəli
+                </h3>
+                <a href="{{ route('portal.schedule') }}" class="text-xs text-sky-400 hover:text-sky-300">Geniş Cədvələ Bax</a>
+            </div>
             <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 @foreach($enrollments as $enr)
                     <div class="glass-card" style="padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center;">
@@ -143,9 +311,12 @@
 
         <!-- Invoices -->
         <div class="glass-panel" style="padding: 2rem;">
-            <h3 class="font-heading" style="font-size: 1.35rem; color: #fff; margin-bottom: 1.25rem;">
-                <i class="fa-solid fa-receipt text-emerald-400"></i> Təhsil Haqqı Fakturaları
-            </h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h3 class="font-heading" style="font-size: 1.35rem; color: #fff;">
+                    <i class="fa-solid fa-receipt text-emerald-400"></i> Təhsil Haqqı Fakturaları
+                </h3>
+                <a href="{{ route('portal.finance.index') }}" class="text-xs text-emerald-400 hover:text-emerald-300">Bütün Fakturalar</a>
+            </div>
             <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 @foreach($invoices as $inv)
                     <div class="glass-card" style="padding: 1rem 1.25rem;">

@@ -49,6 +49,16 @@ class CourseSection extends Model
         return $this->hasMany(CourseAnnouncement::class)->latest('published_at');
     }
 
+    public function gradeComponents(): HasMany
+    {
+        return $this->hasMany(GradeComponent::class)->orderBy('order_index');
+    }
+
+    public function appeals(): HasMany
+    {
+        return $this->hasMany(StudentAppeal::class);
+    }
+
     public function availableSeatsCount(): int
     {
         $enrolled = $this->enrollments()->whereIn('status', ['enrolled', 'completed'])->count();

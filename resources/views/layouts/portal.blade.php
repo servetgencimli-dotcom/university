@@ -257,18 +257,66 @@
 
                 <!-- Student Nav -->
                 @if(Auth::user()->isStudent())
-                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Tələbə Xidmətləri</div>
-                    <a href="{{ route('portal.registration.index') }}" class="nav-link {{ request()->routeIs('portal.registration.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-book-bookmark text-sky-400"></i> Fənn Seçimi (Registration)
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Tələbə Portalı</div>
+                    
+                    <a href="{{ route('portal.schedule') }}" class="nav-link {{ request()->routeIs('portal.schedule*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-table-cells text-sky-400"></i> Dərs cədvəli
                     </a>
+                    
+                    <a href="{{ route('portal.semester-grades') }}" class="nav-link {{ request()->routeIs('portal.semester-grades*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-arrow-down-wide-short text-emerald-400"></i> Semestr qiymətləri
+                    </a>
+
+                    <a href="{{ route('portal.appeals.index', ['type' => 'makeup_exam']) }}" class="nav-link {{ request()->routeIs('portal.appeals*') && request('type') === 'makeup_exam' ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-pen text-amber-400"></i> Tamamlama imtahanı
+                    </a>
+
+                    <a href="{{ route('portal.appeals.index', ['type' => 'grade_objection']) }}" class="nav-link {{ request()->routeIs('portal.appeals*') && request('type') === 'grade_objection' ? 'active' : '' }}">
+                        <i class="fa-solid fa-scale-balanced text-rose-400"></i> İmtahana etiraz et
+                    </a>
+
+                    <a href="{{ route('portal.appeals.index', ['type' => 'penalty_exam']) }}" class="nav-link {{ request()->routeIs('portal.appeals*') && request('type') === 'penalty_exam' ? 'active' : '' }}">
+                        <i class="fa-solid fa-gavel text-orange-400"></i> Cərimə imtahanı
+                    </a>
+
+                    <a href="{{ route('portal.appeals.index', ['type' => 'dean_petition']) }}" class="nav-link {{ request()->routeIs('portal.appeals*') && request('type') === 'dean_petition' ? 'active' : '' }}">
+                        <i class="fa-solid fa-building-user text-indigo-400"></i> Dekanlığa müraciət
+                    </a>
+
                     <a href="{{ route('portal.transcript') }}" class="nav-link {{ request()->routeIs('portal.transcript*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-file-invoice text-emerald-400"></i> Rəsmi Transkript (AZ/EN)
+                        <i class="fa-solid fa-file-lines text-teal-400"></i> Transkript
                     </a>
+
                     <a href="{{ route('portal.finance.index') }}" class="nav-link {{ request()->routeIs('portal.finance.*') ? 'active' : '' }}">
-                        <i class="fa-solid fa-wallet text-amber-400"></i> Təhsil Haqqı & Ödəniş
+                        <i class="fa-solid fa-coins text-amber-300"></i> Ödəniş əməliyyatları
                         @if(Auth::user()->hasUnpaidDebt())
                             <span class="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded-full">BORC</span>
                         @endif
+                    </a>
+
+                    <a href="{{ route('portal.attendance-report') }}" class="nav-link {{ request()->routeIs('portal.attendance-report*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-people-group text-blue-400"></i> Kursun Davamı Məlumatı
+                    </a>
+
+                    <a href="{{ route('portal.registration.index') }}" class="nav-link {{ request()->routeIs('portal.registration.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-book-bookmark text-purple-400"></i> Fənn Qeydiyyatı
+                    </a>
+                @endif
+
+                <!-- Teacher Nav -->
+                @if(Auth::user()->isTeacher())
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #34d399; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Müəllim Nəzarəti</div>
+                    
+                    <a href="{{ route('portal.admin.appeals.index') }}" class="nav-link {{ request()->routeIs('portal.admin.appeals.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-inbox text-amber-400"></i> Tələbə Apellyasiyaları
+                    </a>
+                @endif
+
+                <!-- Super Admin Nav -->
+                @if(Auth::user()->isSystemAdmin() || Auth::user()->isAdmin())
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #f87171; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">İdarəetmə & Qərarlar</div>
+                    <a href="{{ route('portal.admin.appeals.index') }}" class="nav-link {{ request()->routeIs('portal.admin.appeals.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-envelope-open-text text-amber-400"></i> Bütün Müraciətlər
                     </a>
                 @endif
 

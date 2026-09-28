@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\LetterGrade;
+use App\Services\GradingService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Enrollment extends Model
 {
@@ -37,7 +39,7 @@ class Enrollment extends Model
         return $this->belongsTo(CourseSection::class, 'course_section_id');
     }
 
-    public function attendanceRecords(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
     }
@@ -56,7 +58,54 @@ class Enrollment extends Model
         $percentage = round(($effectivePresence / $totalSessions) * 100, 2);
 
         $this->attendance_percentage = $percentage;
+
+        // Automated 25% Absence Limit Rule (Qayıb Limiti Aşımı):
+        // If student missed > 25% of sessions (i.e. presence < 75%) and total recorded sessions >= 4:
+        if ($totalSessions >= 4 && $percentage < 75.00) {
+            $this->letter_grade = 'F';
+
+            if ($this->student) {
+                $courseName = $this->courseSection?->course?->name ?? 'Dərs';
+                SystemNotification::send(
+                    $this->student,
+                    'Qayıb Limit Aşımı Xəbərdarlığı',
+                    "Siz '{$courseName}' fənnindən 25%-dən çox qayıb etdiyiniz üçün (Davamiyyət: {$percentage}%) avtomatik F (Kəsildi) aldınız.",
+                    'academic_warning',
+                    route('portal.attendance-report')
+                );
+            }
+        }
+
         $this->saveQuietly();
+    }
+
+    public function gradeItems(): HasMany
+    {
+        return $this->hasMany(StudentGradeItem::class);
+    }
+
+    public function appeals(): HasMany
+    {
+        return $this->hasMany(StudentAppeal::class);
+    }
+
+    public function recalculateTotalFromComponents(): void
+    {
+        $items = $this->gradeItems()->with('gradeComponent')->get();
+        if ($items->isNotEmpty()) {
+            $total = $items->sum('score');
+            $degreeLevel = $this->student?->degree_level ?? 'bachelor';
+            $letterGrade = LetterGrade::fromScore($total, $degreeLevel);
+
+            $this->total_score = $total;
+            $this->letter_grade = $letterGrade->value;
+            $this->status = $letterGrade->earnsCredit($degreeLevel) ? 'completed' : 'enrolled';
+            $this->saveQuietly();
+
+            if ($this->student) {
+                app(GradingService::class)->recalculateStudentGpa($this->student);
+            }
+        }
     }
 
     // Official Khazar University 5-tier (4.0 scale) grade calculator

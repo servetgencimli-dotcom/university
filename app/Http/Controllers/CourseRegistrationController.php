@@ -19,6 +19,7 @@ class CourseRegistrationController extends Controller
     {
         $user = Auth::user();
         $currentTerm = AcademicTerm::current();
+        $maxCreditLimit = $user->getMaxCreditLimit();
 
         $enrolledSections = Enrollment::with(['courseSection.course.prerequisite', 'courseSection.teacher'])
             ->where('student_id', $user->id)
@@ -39,12 +40,54 @@ class CourseRegistrationController extends Controller
 
         $availableSections = $query->get();
 
+        // Build Real-Time Pre-analysis for each available section
+        $sectionsAnalysis = [];
+        foreach ($availableSections as $sec) {
+            $course = $sec->course;
+            $analysis = [
+                'prereq_status' => 'passed',
+                'prereq_name' => null,
+                'schedule_conflict' => null,
+            ];
+
+            // 1. Prerequisite check
+            if ($course && $course->prerequisite_course_id) {
+                $analysis['prereq_name'] = $course->prerequisite?->name ?? 'Prerekvizit';
+                $passed = Enrollment::where('student_id', $user->id)
+                    ->whereHas('courseSection', fn ($q) => $q->where('course_id', $course->prerequisite_course_id))
+                    ->where('status', 'completed')
+                    ->where('letter_grade', '!=', 'F')
+                    ->exists();
+                $analysis['prereq_status'] = $passed ? 'passed' : 'failed';
+            }
+
+            // 2. Schedule conflict check against currently enrolled sections
+            foreach ($enrolledSections as $enr) {
+                $enrolledSec = $enr->courseSection;
+                if ($enrolledSec && $enrolledSec->day_of_week === $sec->day_of_week) {
+                    $newStart = strtotime($sec->start_time);
+                    $newEnd = strtotime($sec->end_time);
+                    $existStart = strtotime($enrolledSec->start_time);
+                    $existEnd = strtotime($enrolledSec->end_time);
+
+                    if ($newStart < $existEnd && $newEnd > $existStart) {
+                        $analysis['schedule_conflict'] = ($enrolledSec->course?->name ?? 'Dərs')." ({$enrolledSec->start_time}-{$enrolledSec->end_time})";
+                        break;
+                    }
+                }
+            }
+
+            $sectionsAnalysis[$sec->id] = $analysis;
+        }
+
         return view('portal.course_registration', compact(
             'user',
             'currentTerm',
             'enrolledSections',
             'totalSelectedCredits',
-            'availableSections'
+            'availableSections',
+            'maxCreditLimit',
+            'sectionsAnalysis'
         ));
     }
 
@@ -99,8 +142,8 @@ class CourseRegistrationController extends Controller
             }
         }
 
-        // 6. Max Credit Limit Check (30 ECTS per semester standard)
-        $maxLimit = $currentTerm?->max_credits_limit ?? 30;
+        // 6. Max Credit Limit Check (Dynamic limit based on GPA: 36 ECTS for Honor, 24 ECTS for Probation, 30 ECTS standard)
+        $maxLimit = $user->getMaxCreditLimit();
         $currentCredits = Enrollment::where('student_id', $user->id)
             ->where('status', 'enrolled')
             ->whereHas('courseSection', fn ($q) => $q->where('semester_term', $section->semester_term))
@@ -108,7 +151,7 @@ class CourseRegistrationController extends Controller
             ->sum(fn ($e) => $e->courseSection?->course?->credits ?? 0);
 
         if (($currentCredits + $course->credits) > $maxLimit) {
-            return back()->with('error', "Kredit limiti aşıldı! Bir semestr üçün maksimum {$maxLimit} ECTS kredit seçilə bilər (Cari: {$currentCredits} ECTS, Cəhd: +{$course->credits} ECTS).");
+            return back()->with('error', "Kredit limiti aşıldı! Sizə icazə verilən maksimum limit {$maxLimit} ECTS kreditdir (Cari: {$currentCredits} ECTS, Cəhd: +{$course->credits} ECTS).");
         }
 
         // 7. Schedule Collision Check (Dərs toqquşması)

@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AdmissionsApplication;
+use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\Program;
+use App\Models\StudentAppeal;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -181,5 +183,106 @@ class UniversitySystemTest extends TestCase
         $response->assertRedirect();
         $app->refresh();
         $this->assertEquals('accepted', $app->status);
+    }
+
+    public function test_notifications_page_loads_and_read_all_route_works(): void
+    {
+        $student = User::where('role', 'student')->first();
+        $this->actingAs($student);
+
+        $response = $this->get(route('portal.notifications.index'));
+        $response->assertStatus(200);
+
+        $readAllResponse = $this->post(route('portal.notifications.readAll'));
+        $readAllResponse->assertRedirect();
+    }
+
+    public function test_audit_logs_page_loads_for_system_admin_with_target_types(): void
+    {
+        $sysAdmin = User::where('role', 'system_admin')->first();
+        $this->actingAs($sysAdmin);
+
+        $response = $this->get(route('portal.admin.audit-logs'));
+        $response->assertStatus(200);
+        $response->assertSee('Təhlükəsizlik və Audit Jurnalı');
+    }
+
+    public function test_phase2_course_registration_smart_validations(): void
+    {
+        $student = User::where('role', 'student')->first();
+        $this->actingAs($student);
+
+        // 1. Course Registration Page Loads with Phase 2 Analysis
+        $response = $this->get(route('portal.registration.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Fənn Seçimi');
+        $response->assertSee('toqquşması analizi aktivdir');
+
+        // 2. GPA Credit limit logic verification
+        $student->gpa = 3.80;
+        $student->save();
+        $this->assertEquals(36, $student->getMaxCreditLimit());
+
+        $student->gpa = 1.50;
+        $student->save();
+        $this->assertEquals(24, $student->getMaxCreditLimit());
+    }
+
+    public function test_phase3_automated_attendance_fail_and_multi_stage_appeals(): void
+    {
+        $student = User::where('role', 'student')->first();
+        $teacher = User::where('role', 'teacher')->first();
+        $enrollment = Enrollment::with('courseSection')->where('student_id', $student->id)->first();
+        $this->assertNotNull($enrollment);
+
+        // 1. Simulate 4 sessions where student was absent (0% attendance -> <75% -> F grade & failed_attendance status)
+        for ($i = 1; $i <= 4; $i++) {
+            AttendanceRecord::create([
+                'enrollment_id' => $enrollment->id,
+                'session_date' => now()->subDays($i)->format('Y-m-d'),
+                'status' => 'absent',
+            ]);
+        }
+
+        $enrollment->recalculateAttendancePercentage();
+        $enrollment->refresh();
+
+        $this->assertEquals('F', $enrollment->letter_grade);
+
+        // 2. Multi-Stage Appeal Submission & Approval with Score Adjustment
+        $appeal = StudentAppeal::create([
+            'student_id' => $student->id,
+            'course_section_id' => $enrollment->course_section_id,
+            'enrollment_id' => $enrollment->id,
+            'type' => 'grade_objection',
+            'subject' => 'Apellyasiya Komissiyası Test Müraciəti',
+            'reason' => 'Kollokvium balımın yenidən yoxlanılması barədə.',
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ]);
+
+        // Teacher forwards to commission
+        $this->actingAs($teacher)->post(route('portal.admin.appeals.respond', $appeal->id), [
+            'status' => 'commission_review',
+            'reviewer_notes' => 'Komissiyanın iclasına yönləndirildi.',
+        ])->assertRedirect();
+
+        $appeal->refresh();
+        $this->assertEquals('commission_review', $appeal->status);
+
+        // Admin approves with +5 points score adjustment
+        $admin = User::where('role', 'admin')->first();
+        $this->actingAs($admin)->post(route('portal.admin.appeals.respond', $appeal->id), [
+            'status' => 'approved',
+            'reviewer_notes' => 'Komissiya tərəfindən 5 bal artırıldı.',
+            'score_adjustment' => 5,
+        ])->assertRedirect();
+
+        $appeal->refresh();
+        $enrollment->refresh();
+
+        $this->assertEquals('approved', $appeal->status);
+        $this->assertEquals(96.50, (float) $enrollment->total_score);
+        $this->assertEquals('A', $enrollment->letter_grade);
     }
 }

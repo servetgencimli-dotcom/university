@@ -15,6 +15,10 @@ class AuditLogController extends Controller
             $query->where('action', $request->action);
         }
 
+        if ($request->filled('target_type')) {
+            $query->where('subject_type', $request->target_type);
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -26,8 +30,9 @@ class AuditLogController extends Controller
 
         $logs = $query->latest()->paginate(30)->withQueryString();
 
-        $actions = ActivityLog::select('action')->distinct()->pluck('action');
+        $actions = ActivityLog::select('action')->distinct()->pluck('action')->filter()->values();
+        $targetTypes = ActivityLog::whereNotNull('subject_type')->where('subject_type', '!=', '')->distinct()->pluck('subject_type')->filter()->values();
 
-        return view('portal.audit_logs', compact('logs', 'actions'));
+        return view('portal.audit_logs', compact('logs', 'actions', 'targetTypes'));
     }
 }

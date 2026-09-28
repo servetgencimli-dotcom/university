@@ -37,7 +37,12 @@
                 <select name="target_type" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500">
                     <option value="">Bütün modellər</option>
                     @foreach($targetTypes as $tt)
-                        <option value="{{ $tt }}" {{ request('target_type') == $tt ? 'selected' : '' }}>{{ class_basename($tt) }}</option>
+                        @php
+                            $ttStr = is_string($tt) ? $tt : (is_object($tt) && isset($tt->target_type) ? $tt->target_type : '');
+                        @endphp
+                        @if($ttStr)
+                            <option value="{{ $ttStr }}" {{ request('target_type') == $ttStr ? 'selected' : '' }}>{{ class_basename($ttStr) }}</option>
+                        @endif
                     @endforeach
                 </select>
             </div>
@@ -68,12 +73,17 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @forelse($logs as $log)
+                        @php
+                            $actStr = (string)($log->action ?? '');
+                            $targetType = isset($log->target_type) ? $log->target_type : null;
+                            $targetId = isset($log->target_id) ? $log->target_id : null;
+                        @endphp
                         <tr class="hover:bg-slate-50/60 transition">
                             <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-mono">
-                                {{ $log->created_at->format('d.m.Y H:i:s') }}
+                                {{ isset($log->created_at) ? (is_string($log->created_at) ? $log->created_at : $log->created_at->format('d.m.Y H:i:s')) : '' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($log->user)
+                                @if(isset($log->user) && $log->user)
                                     <div class="font-bold text-slate-800">{{ $log->user->name }}</div>
                                     <div class="text-xs text-slate-500">{{ $log->user->email }}</div>
                                 @else
@@ -82,24 +92,24 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2.5 py-1 rounded-lg text-xs font-bold 
-                                    @if(str_contains($log->action, 'create') || str_contains($log->action, 'enroll') || str_contains($log->action, 'admit')) bg-emerald-100 text-emerald-800
-                                    @elseif(str_contains($log->action, 'delete') || str_contains($log->action, 'drop')) bg-red-100 text-red-800
-                                    @elseif(str_contains($log->action, 'password') || str_contains($log->action, 'impersonate')) bg-purple-100 text-purple-800
-                                    @elseif(str_contains($log->action, 'payment')) bg-amber-100 text-amber-800
+                                    @if(str_contains($actStr, 'create') || str_contains($actStr, 'enroll') || str_contains($actStr, 'admit')) bg-emerald-100 text-emerald-800
+                                    @elseif(str_contains($actStr, 'delete') || str_contains($actStr, 'drop')) bg-red-100 text-red-800
+                                    @elseif(str_contains($actStr, 'password') || str_contains($actStr, 'impersonate')) bg-purple-100 text-purple-800
+                                    @elseif(str_contains($actStr, 'payment')) bg-amber-100 text-amber-800
                                     @else bg-blue-100 text-blue-800 @endif">
-                                    {{ $log->action }}
+                                    {{ $actStr }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-600">
-                                @if($log->target_type)
-                                    {{ class_basename($log->target_type) }} #{{ $log->target_id }}
+                                @if($targetType)
+                                    {{ class_basename($targetType) }} #{{ $targetId }}
                                 @else
                                     -
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <p class="text-xs text-slate-700 font-medium">{{ $log->description }}</p>
-                                @if($log->details && count($log->details) > 0)
+                                <p class="text-xs text-slate-700 font-medium">{{ $log->description ?? '' }}</p>
+                                @if(isset($log->details) && (is_array($log->details) || is_object($log->details)) && count((array)$log->details) > 0)
                                     <details class="mt-1">
                                         <summary class="text-[11px] text-blue-600 cursor-pointer hover:underline font-mono">JSON detallara bax</summary>
                                         <pre class="mt-1 p-2 bg-slate-900 text-emerald-400 text-[10px] rounded-lg overflow-x-auto max-w-md font-mono">{{ json_encode($log->details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>

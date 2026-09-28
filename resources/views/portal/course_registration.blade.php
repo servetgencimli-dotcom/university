@@ -53,20 +53,32 @@
         <!-- Credit Meter & Progress -->
         <div class="glass-panel" style="padding: 2rem; background: linear-gradient(135deg, rgba(30, 27, 75, 0.8), rgba(15, 23, 42, 0.9)); border-color: rgba(99, 102, 241, 0.3); display: flex; flex-direction: column; justify-content: space-between;">
             <div>
-                <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem;">Seçilmiş Semestr Krediti</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Seçilmiş Semestr Krediti</div>
+                    @if($user->gpa >= 3.50)
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.7rem;">
+                            <i class="fa-solid fa-star"></i> Əlaçı Limiti (36 ECTS)
+                        </span>
+                    @elseif($user->gpa > 0 && $user->gpa < 2.00)
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.7rem;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Kəsir Limiti (24 ECTS)
+                        </span>
+                    @endif
+                </div>
+
                 <div style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 1rem;">
                     <span class="font-heading" style="font-size: 2.5rem; color: #38bdf8;">{{ $totalSelectedCredits }}</span>
-                    <span style="color: #94a3b8; font-size: 1.1rem;">/ {{ $currentTerm->max_credits_limit ?? 30 }} ECTS</span>
+                    <span style="color: #94a3b8; font-size: 1.1rem;">/ {{ $maxCreditLimit }} ECTS</span>
                 </div>
 
                 <!-- Progress Bar -->
                 <div style="background: rgba(255,255,255,0.1); border-radius: 9999px; height: 12px; overflow: hidden; margin-bottom: 0.75rem;">
-                    <div style="background: linear-gradient(90deg, #38bdf8, #818cf8); height: 100%; width: {{ min(100, ($totalSelectedCredits / ($currentTerm->max_credits_limit ?? 30)) * 100) }}%;"></div>
+                    <div style="background: linear-gradient(90deg, #38bdf8, #818cf8); height: 100%; width: {{ min(100, ($totalSelectedCredits / $maxCreditLimit) * 100) }}%;"></div>
                 </div>
 
                 <div style="font-size: 0.8rem; color: #cbd5e1; display: flex; justify-content: space-between;">
                     <span>Qalan limit:</span>
-                    <strong>{{ max(0, ($currentTerm->max_credits_limit ?? 30) - $totalSelectedCredits) }} ECTS</strong>
+                    <strong>{{ max(0, $maxCreditLimit - $totalSelectedCredits) }} ECTS</strong>
                 </div>
             </div>
 
@@ -140,7 +152,7 @@
                 <h3 class="font-heading" style="font-size: 1.3rem; color: #fff;">
                     <i class="fa-solid fa-layer-group text-emerald-400"></i> Qeydiyyat üçün Açıq Olan Fənlər və Qruplar
                 </h3>
-                <p style="font-size: 0.85rem; color: #94a3b8;">İxtisasınız və semestriniz üçün təklif olunan akademik fənlər</p>
+                <p style="font-size: 0.85rem; color: #94a3b8;">İxtisasınız və semestriniz üçün təklif olunan akademik fənlər (Prerekvizit & Saat toqquşması analizi aktivdir)</p>
             </div>
             <span class="badge badge-student">{{ $availableSections->count() }} Qrup Açıqdır</span>
         </div>
@@ -151,20 +163,36 @@
                     $isAlreadyEnrolled = $enrolledSections->contains('course_section_id', $sec->id);
                     $availableSeats = $sec->availableSeatsCount();
                     $isFull = $sec->isFull();
+                    $analysis = $sectionsAnalysis[$sec->id] ?? ['prereq_status' => 'passed', 'prereq_name' => null, 'schedule_conflict' => null];
+                    $prereqFailed = $analysis['prereq_status'] === 'failed';
+                    $hasConflict = !empty($analysis['schedule_conflict']);
                 @endphp
 
-                <div class="glass-card" style="padding: 1.5rem; display: grid; grid-template-columns: 2.5fr 1.5fr 1fr auto; gap: 1.5rem; align-items: center; border-left: 4px solid {{ $isAlreadyEnrolled ? '#10b981' : ($isFull ? '#ef4444' : '#00A3E0') }};">
+                <div class="glass-card" style="padding: 1.5rem; display: grid; grid-template-columns: 2.5fr 1.5fr 1fr auto; gap: 1.5rem; align-items: center; border-left: 4px solid {{ $isAlreadyEnrolled ? '#10b981' : ($isFull || $prereqFailed || $hasConflict ? '#ef4444' : '#00A3E0') }};">
                     
                     <!-- Course Info -->
                     <div>
-                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
                             <span class="font-mono" style="color: #818cf8; font-weight: 700; font-size: 0.85rem;">{{ $sec->course->code }}</span>
                             <span class="badge {{ $sec->course->type === 'compulsory' ? 'badge-primary' : 'badge-warning' }}" style="font-size: 0.7rem;">
                                 {{ $sec->course->type === 'compulsory' ? 'Məcburi' : 'Seçmə' }}
                             </span>
+
                             @if($sec->course->prerequisite)
-                                <span style="font-size: 0.75rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); padding: 0.15rem 0.5rem; border-radius: 4px;">
-                                    <i class="fa-solid fa-link"></i> Prerekvizit: {{ $sec->course->prerequisite->code }}
+                                @if($prereqFailed)
+                                    <span style="font-size: 0.75rem; color: #f87171; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                                        <i class="fa-solid fa-circle-xmark"></i> Prerekvizit Çatışmır: {{ $analysis['prereq_name'] }}
+                                    </span>
+                                @else
+                                    <span style="font-size: 0.75rem; color: #34d399; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.15rem 0.5rem; border-radius: 4px;">
+                                        <i class="fa-solid fa-circle-check"></i> Prerekvizit Ödənilib: {{ $sec->course->prerequisite->code }}
+                                    </span>
+                                @endif
+                            @endif
+
+                            @if($hasConflict)
+                                <span style="font-size: 0.75rem; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Saat Toqquşması: {{ $analysis['schedule_conflict'] }}
                                 </span>
                             @endif
                         </div>
@@ -203,6 +231,14 @@
                         @if($isAlreadyEnrolled)
                             <button class="btn btn-outline" disabled style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #34d399; border-color: rgba(16, 185, 129, 0.4);">
                                 <i class="fa-solid fa-check"></i> Seçilib
+                            </button>
+                        @elseif($prereqFailed)
+                            <button class="btn btn-outline" disabled title="Prerekvizit fənn keçilməyib" style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+                                <i class="fa-solid fa-ban"></i> Prerekvizit Qadağası
+                            </button>
+                        @elseif($hasConflict)
+                            <button class="btn btn-outline" disabled title="Dərs saatı toqquşur" style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Saat Toqquşur
                             </button>
                         @elseif($isFull)
                             <button class="btn btn-outline" disabled style="padding: 0.5rem 1rem; font-size: 0.85rem; color: #64748b;">

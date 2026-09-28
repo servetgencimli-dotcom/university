@@ -29,6 +29,21 @@ class ActivityLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getTargetTypeAttribute(): ?string
+    {
+        return $this->subject_type;
+    }
+
+    public function getTargetIdAttribute(): mixed
+    {
+        return $this->subject_id;
+    }
+
+    public function getDetailsAttribute(): ?array
+    {
+        return $this->properties;
+    }
+
     public static function log(string $action, string $description, ?Model $subject = null, array $properties = []): self
     {
         return static::create([

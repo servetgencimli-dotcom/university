@@ -37,13 +37,18 @@
 
         @foreach($taughtSections as $sec)
             <div class="glass-card" style="padding: 1.75rem; margin-bottom: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.75rem;">
                     <div>
                         <span class="font-mono badge badge-primary">{{ $sec->course->code }}</span>
                         <span class="font-heading" style="font-size: 1.2rem; color: #fff; margin-left: 0.5rem;">{{ $sec->course->name }}</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8;">
-                        <i class="fa-solid fa-clock"></i> {{ $sec->day_of_week }}, {{ $sec->start_time }} - {{ $sec->end_time }} • {{ $sec->room_number }}
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span style="font-size: 0.85rem; color: #94a3b8;">
+                            <i class="fa-solid fa-clock"></i> {{ $sec->day_of_week }}, {{ $sec->start_time }} - {{ $sec->end_time }} • {{ $sec->room_number }}
+                        </span>
+                        <a href="{{ route('portal.grading.show', $sec->id) }}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.95rem; background: linear-gradient(135deg, #00A3E0, #0284c7);">
+                            <i class="fa-solid fa-sliders"></i> Bal Bölgüsü & Elektron Jurnal
+                        </a>
                     </div>
                 </div>
 
