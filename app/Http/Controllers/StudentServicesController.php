@@ -258,4 +258,34 @@ class StudentServicesController extends Controller
 
         return back()->with('success', "Müraciət statusu uğurla '{$appeal->status_label}' olaraq qeyd edildi!");
     }
+
+    /**
+     * E-Arayış (Rəsmi Elektron Təhsil Arayışı Generatoru - Phase 4)
+     */
+    public function generateCertificate(Request $request)
+    {
+        $user = Auth::user();
+        $type = $request->get('type', 'academic');
+        $docNumber = 'AR-2026-'.sprintf('%06d', $user->id * 100 + rand(10, 99));
+        $verificationHash = $user->getVerificationHash();
+        $verificationUrl = route('transcript.verify', $verificationHash);
+
+        $titles = [
+            'academic' => 'Tələbə Olması Haqqında Rəsmi Arayış',
+            'military' => 'Hərbi Çağırış Məntəqəsinə Təqdim Etmək Üçün Arayış',
+            'bank' => 'Bank və Maliyyə Qurumlarına Təqdim Üçün Arayış',
+            'general' => 'Ümumi Təhsil Statusu Arayışı',
+        ];
+
+        $docTitle = $titles[$type] ?? $titles['academic'];
+
+        return view('portal.document_view', compact(
+            'user',
+            'type',
+            'docTitle',
+            'docNumber',
+            'verificationHash',
+            'verificationUrl'
+        ));
+    }
 }

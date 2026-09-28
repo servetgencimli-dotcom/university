@@ -7,6 +7,7 @@ use App\Models\AttendanceRecord;
 use App\Models\Enrollment;
 use App\Models\Program;
 use App\Models\StudentAppeal;
+use App\Models\TuitionInvoice;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -284,5 +285,69 @@ class UniversitySystemTest extends TestCase
         $this->assertEquals('approved', $appeal->status);
         $this->assertEquals(96.50, (float) $enrollment->total_score);
         $this->assertEquals('A', $enrollment->letter_grade);
+    }
+
+    public function test_phase4_public_transcript_qr_verification_and_e_arayis_generation(): void
+    {
+        $student = User::where('role', 'student')->first();
+        $this->assertNotNull($student);
+
+        // 1. Valid QR Code Hash Verification
+        $hash = $student->getVerificationHash();
+        $response = $this->get(route('transcript.verify', $hash));
+        $response->assertStatus(200);
+        $response->assertSee('RƏSMİ SƏNƏD TƏSDİQLƏNDİ');
+        $response->assertSee($student->name);
+
+        // 2. Invalid QR Code Verification
+        $invalidResponse = $this->get(route('transcript.verify', 'INVALIDHASH12345'));
+        $invalidResponse->assertStatus(200);
+        $invalidResponse->assertSee('SƏNƏD TAPILMADI VƏ YA ETİBARSIZDIR');
+
+        // 3. E-Arayış Generation
+        $this->actingAs($student);
+        $certResponse = $this->get(route('portal.certificate.generate', ['type' => 'military']));
+        $certResponse->assertStatus(200);
+        $certResponse->assertSee('ARAYIŞ');
+        $certResponse->assertSee('Hərbi Çağırış');
+    }
+
+    public function test_phase5_scholarship_tier_calculation_and_installment_plan(): void
+    {
+        $student = User::where('role', 'student')->first();
+        $this->assertNotNull($student);
+
+        // 1. Scholarship tier calculation for high GPA student
+        $student->gpa = 3.90;
+        $student->save();
+        $tier = $student->getScholarshipTier();
+        $this->assertTrue($tier['eligible']);
+        $this->assertEquals(200.00, $tier['amount']);
+
+        // 2. Installment Plan Division
+        $invoice = TuitionInvoice::create([
+            'student_id' => $student->id,
+            'invoice_number' => 'INV-TEST-2026',
+            'semester_term' => '2026-Bahar',
+            'amount' => 1200.00,
+            'due_date' => now()->addDays(30),
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($student);
+        $response = $this->post(route('portal.finance.installments', $invoice->id), [
+            'parts' => 3,
+        ]);
+
+        $response->assertRedirect(route('portal.finance.index'));
+
+        // Original invoice deleted, 3 new installment invoices created (400.00 each)
+        $this->assertDatabaseMissing('tuition_invoices', ['id' => $invoice->id]);
+        $installmentInvoices = TuitionInvoice::where('student_id', $student->id)
+            ->where('invoice_number', 'like', 'INV-TEST-2026-T%')
+            ->get();
+
+        $this->assertCount(3, $installmentInvoices);
+        $this->assertEquals(400.00, (float) $installmentInvoices->first()->amount);
     }
 }

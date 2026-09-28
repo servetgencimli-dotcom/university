@@ -55,6 +55,9 @@ Route::post('/events/{slug}/rsvp', [EventController::class, 'rsvp'])->name('even
 Route::get('/news', [NewsController::class, 'index'])->name('news.index');
 Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
 
+// Public E-Verification Portal
+Route::get('/transcript/verify/{code}', [TranscriptController::class, 'verifyCode'])->name('transcript.verify');
+
 // Authentication
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
@@ -78,6 +81,9 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
     // Official Academic Transcript & Degree Audit
     Route::get('/transcript/{studentId?}', [TranscriptController::class, 'show'])->name('transcript');
 
+    // E-Arayış Official Digital Certificate Generator
+    Route::get('/e-arayis', [StudentServicesController::class, 'generateCertificate'])->name('certificate.generate');
+
     // Per-Session Attendance Recording (Teachers & Admins)
     Route::post('/attendance/sections/{sectionId}', [AttendanceController::class, 'storeSession'])
         ->middleware('role:teacher,admin,system_admin')
@@ -94,6 +100,7 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
     // Financial Portal, Online Payment Gateway & Receipts
     Route::get('/finance', [FinanceController::class, 'index'])->name('finance.index');
     Route::post('/finance/invoices/{invoiceId}/pay', [FinanceController::class, 'payOnline'])->name('finance.pay');
+    Route::post('/finance/invoices/{invoiceId}/installments', [FinanceController::class, 'createInstallments'])->name('finance.installments');
     Route::get('/finance/invoices/{invoiceId}/receipt', [FinanceController::class, 'receipt'])->name('finance.receipt');
 
     // In-App Notification Center

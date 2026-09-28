@@ -199,4 +199,55 @@ class User extends Authenticatable
 
         return 30; // Standard credit limit
     }
+
+    /**
+     * Automated GPA-Based Scholarship Tier Calculation (Phase 5)
+     */
+    public function getScholarshipTier(): array
+    {
+        $gpa = (float) ($this->gpa ?? 0);
+        $hasFailed = $this->enrollments()->where('letter_grade', 'F')->exists();
+
+        if ($hasFailed || $gpa < 2.75) {
+            return [
+                'eligible' => false,
+                'title' => 'Təqaüd Düşmür (Akademik borc / GPA < 2.75)',
+                'amount' => 0,
+                'badge' => 'badge-danger',
+            ];
+        }
+
+        if ($gpa >= 3.80) {
+            return [
+                'eligible' => true,
+                'title' => 'Əlaçı Təqaüdü (100% Yüksək Məbləğ)',
+                'amount' => 200.00,
+                'badge' => 'badge-success',
+            ];
+        }
+
+        if ($gpa >= 3.20) {
+            return [
+                'eligible' => true,
+                'title' => 'Həvəsləndirici (Zərbəçi) Təqaüdü',
+                'amount' => 145.00,
+                'badge' => 'badge-primary',
+            ];
+        }
+
+        return [
+            'eligible' => true,
+            'title' => 'Adi Standart Təqaüd',
+            'amount' => 100.00,
+            'badge' => 'badge-info',
+        ];
+    }
+
+    /**
+     * Unique QR verification hash for digital e-documents and transcript.
+     */
+    public function getVerificationHash(): string
+    {
+        return strtoupper(substr(hash('sha256', "KU-VERIFY-{$this->id}-{$this->student_id}-{$this->email}"), 0, 16));
+    }
 }

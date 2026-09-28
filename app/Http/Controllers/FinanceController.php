@@ -21,8 +21,9 @@ class FinanceController extends Controller
 
         $totalDebt = $invoices->whereIn('status', ['pending', 'unpaid', 'overdue'])->sum('amount');
         $totalPaid = $invoices->where('status', 'paid')->sum('amount');
+        $scholarship = $user->getScholarshipTier();
 
-        return view('portal.finance', compact('user', 'invoices', 'totalDebt', 'totalPaid'));
+        return view('portal.finance', compact('user', 'invoices', 'totalDebt', 'totalPaid', 'scholarship'));
     }
 
     /**
@@ -48,8 +49,8 @@ class FinanceController extends Controller
             'cvv' => 'required|string|min:3|max:4',
         ]);
 
-        $txnId = 'TXN-KU-' . date('Ymd') . '-' . strtoupper(Str::random(6));
-        $receiptNum = 'KU-REC-2026-' . rand(10000, 99999);
+        $txnId = 'TXN-KU-'.date('Ymd').'-'.strtoupper(Str::random(6));
+        $receiptNum = 'KU-REC-2026-'.rand(10000, 99999);
 
         $invoice->update([
             'status' => 'paid',
@@ -60,7 +61,7 @@ class FinanceController extends Controller
             'paid_amount' => $invoice->amount,
             'gateway_response' => [
                 'status' => 'SUCCESS',
-                'card_mask' => '**** **** **** ' . substr(str_replace(' ', '', $validated['card_number']), -4),
+                'card_mask' => '**** **** **** '.substr(str_replace(' ', '', $validated['card_number']), -4),
                 'card_holder' => strtoupper($validated['card_holder']),
                 'processed_at' => now()->toIso8601String(),
             ],
@@ -97,5 +98,62 @@ class FinanceController extends Controller
         }
 
         return view('portal.payment_receipt', compact('invoice'));
+    }
+
+    /**
+     * Təhsil haqqı bölünməsi / Taksit planı (Phase 5 - Installment Plan Generator)
+     */
+    public function createInstallments(Request $request, $invoiceId)
+    {
+        $user = Auth::user();
+        $invoice = TuitionInvoice::findOrFail($invoiceId);
+
+        if ($invoice->student_id !== $user->id && ! $user->isAdmin()) {
+            abort(403);
+        }
+
+        if ($invoice->status === 'paid') {
+            return back()->with('error', 'Ödənilmiş faktura taksitlərə bölünə bilməz.');
+        }
+
+        $validated = $request->validate([
+            'parts' => 'required|integer|in:2,3,4',
+        ]);
+
+        $partsCount = (int) $validated['parts'];
+        $partAmount = round((float) $invoice->amount / $partsCount, 2);
+        $term = $invoice->semester_term;
+        $originalNumber = $invoice->invoice_number;
+
+        $invoice->delete();
+
+        for ($i = 1; $i <= $partsCount; $i++) {
+            $dueDate = now()->addDays(30 * ($i - 1) + 15);
+            TuitionInvoice::create([
+                'student_id' => $user->id,
+                'invoice_number' => "{$originalNumber}-T{$i}/{$partsCount}",
+                'semester_term' => $term,
+                'amount' => $partAmount,
+                'due_date' => $dueDate,
+                'status' => 'pending',
+            ]);
+        }
+
+        ActivityLog::log(
+            'INVOICE_SPLIT',
+            "Tələbə {$user->name} faktura #{$originalNumber} məbləğini ({$invoice->amount} ₼) {$partsCount} taksit hissəsinə böldü.",
+            $user
+        );
+
+        SystemNotification::send(
+            $user,
+            'Təhsil Haqqı Taksitlərə Bölündü',
+            "Faktura #{$originalNumber} üzrə {$partsCount} mərhələli ödəniş qrafiki uğurla yaradıldı.",
+            'finance',
+            route('portal.finance.index')
+        );
+
+        return redirect()->route('portal.finance.index')
+            ->with('success', "Təhsil haqqı uğurla {$partsCount} bərabər taksitə bölündü!");
     }
 }
