@@ -229,4 +229,168 @@ class GradeDistributionController extends Controller
 
         return back()->with('success', 'Bütün tələbələrin balları və hərfi qiymətləri uğurla yeniləndi!');
     }
+
+    /**
+     * Analytics dashboard — grade distribution, pass rate, top/bottom students.
+     */
+    public function showAnalytics(int $sectionId)
+    {
+        $user = Auth::user();
+        $section = CourseSection::with([
+            'course.program',
+            'teacher',
+            'enrollments.student',
+        ])->findOrFail($sectionId);
+
+        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+            abort(403, 'Bu fənnin analitika panelinə baxış icazəniz yoxdur.');
+        }
+
+        return view('portal.teacher_analytics', compact('section'));
+    }
+
+    /**
+     * Academic risk student list — attendance < 75% OR total score < 51.
+     */
+    public function riskStudents(int $sectionId)
+    {
+        $user = Auth::user();
+        $section = CourseSection::with([
+            'course',
+            'teacher',
+            'enrollments.student',
+        ])->findOrFail($sectionId);
+
+        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+            abort(403, 'İcazəniz yoxdur.');
+        }
+
+        return view('portal.teacher_risk_students', compact('section'));
+    }
+
+    /**
+     * Bulk notify ALL risk students in a section.
+     */
+    public function notifyRiskStudents(int $sectionId)
+    {
+        $user = Auth::user();
+        $section = CourseSection::with(['course', 'enrollments.student'])->findOrFail($sectionId);
+
+        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+            abort(403, 'İcazəniz yoxdur.');
+        }
+
+        $riskEnrollments = $section->enrollments->filter(
+            fn (Enrollment $e) => $e->attendance_percentage < 75
+                || ($e->total_score > 0 && $e->total_score < 51)
+        );
+
+        $count = 0;
+        foreach ($riskEnrollments as $enr) {
+            if (! $enr->student) {
+                continue;
+            }
+
+            SystemNotification::create([
+                'user_id' => $enr->student_id,
+                'title' => '⚠️ Akademik Risk Xəbərdarlığı: '.$section->course->name,
+                'message' => "Müəllim {$user->name} tərəfindən xəbərdar edilirsiniz: '{$section->course->name}' fənni üzrə "
+                    ."davamiyyətiniz ({$enr->attendance_percentage}%) və/ya cari balınız ({$enr->total_score}) "
+                    .'akademik riskdədir. Zəhmət olmasa müəllimlə əlaqə saxlayın.',
+                'type' => 'academic',
+                'link' => route('portal.semester-grades'),
+                'is_read' => false,
+            ]);
+            $count++;
+        }
+
+        return back()->with('success', "{$count} riskli tələbəyə akademik xəbərdarlıq bildirişi göndərildi.");
+    }
+
+    /**
+     * Notify a single at-risk student.
+     */
+    public function notifyOneRiskStudent(int $sectionId, int $enrollmentId)
+    {
+        $user = Auth::user();
+        $section = CourseSection::with('course')->findOrFail($sectionId);
+
+        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+            abort(403, 'İcazəniz yoxdur.');
+        }
+
+        $enrollment = Enrollment::with('student')
+            ->where('course_section_id', $section->id)
+            ->findOrFail($enrollmentId);
+
+        if ($enrollment->student) {
+            SystemNotification::create([
+                'user_id' => $enrollment->student_id,
+                'title' => '⚠️ Akademik Risk Xəbərdarlığı: '.$section->course->name,
+                'message' => "Müəllim {$user->name} tərəfindən şəxsən xəbərdar edilirsiniz: '{$section->course->name}' fənni üzrə "
+                    ."davamiyyətiniz ({$enrollment->attendance_percentage}%) və/ya cari balınız ({$enrollment->total_score}) "
+                    .'akademik riskdədir. Zəhmət olmasa müəllimlə əlaqə saxlayın və ya apellyasiya göndərin.',
+                'type' => 'academic',
+                'link' => route('portal.semester-grades'),
+                'is_read' => false,
+            ]);
+        }
+
+        return back()->with('success', "{$enrollment->student?->name} tələbəsinə xəbərdarlıq bildirişi göndərildi.");
+    }
+
+    /**
+     * Export section grades as CSV file.
+     */
+    public function exportGrades(int $sectionId)
+    {
+        $user = Auth::user();
+        $section = CourseSection::with(['course', 'enrollments.student'])->findOrFail($sectionId);
+
+        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+            abort(403, 'İcazəniz yoxdur.');
+        }
+
+        $filename = 'grades_'.$section->course->code.'_'.$section->semester_term.'_'.now()->format('Ymd').'.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ];
+
+        $callback = function () use ($section) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
+
+            fputcsv($handle, [
+                '#',
+                'Tələbə Adı',
+                'Tələbə ID',
+                'Aralıq Bal',
+                'Final Bal',
+                'Yekun Bal',
+                'Hərfi Qiymət',
+                'Davamiyyət %',
+                'Status',
+            ]);
+
+            foreach ($section->enrollments->sortByDesc('total_score')->values() as $idx => $enr) {
+                fputcsv($handle, [
+                    $idx + 1,
+                    $enr->student?->name ?? '—',
+                    $enr->student?->student_id ?? '—',
+                    $enr->midterm_score,
+                    $enr->final_score,
+                    $enr->total_score,
+                    $enr->letter_grade ?? '—',
+                    $enr->attendance_percentage.'%',
+                    $enr->total_score >= 51 ? 'Keçdi' : 'Keçmədi',
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

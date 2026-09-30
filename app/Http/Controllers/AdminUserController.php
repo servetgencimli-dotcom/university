@@ -66,6 +66,8 @@ class AdminUserController extends Controller
             'permissions' => 'nullable|array',
         ]);
 
+        $this->ensureCanAssignPrivileges($validated['role'], $validated['permissions'] ?? []);
+
         $user = new User([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -100,6 +102,7 @@ class AdminUserController extends Controller
     public function updatePassword(Request $request, $id)
     {
         $user = User::findOrFail($id);
+        $this->ensureCanManageUser($user);
 
         $validated = $request->validate([
             'password' => 'required|string|min:6',
@@ -130,8 +133,19 @@ class AdminUserController extends Controller
             'permissions' => 'nullable|array',
         ]);
 
+        $this->ensureCanManageUser($user);
+        $this->ensureCanAssignPrivileges($validated['role'], $validated['permissions'] ?? []);
+
         $user->role = $validated['role'];
-        $user->role_title = $validated['role_title'] ?? $user->role_title;
+        $user->role_title = $request->input('role_title') ?: match ($validated['role']) {
+            'system_admin' => 'Baş Sistem Administratoru',
+            'admin' => 'Dekan / Məktəb Admini',
+            'teacher' => 'Fənn Müəllimi',
+            'master_student' => 'Magistrant',
+            'student' => 'Tələbə',
+            'applicant' => 'Abituriyent',
+            default => 'Əməkdaş',
+        };
         $user->faculty_id = $validated['faculty_id'] ?? null;
         $user->department_id = $validated['department_id'] ?? null;
         $user->status = $validated['status'];
@@ -191,5 +205,31 @@ class AdminUserController extends Controller
 
         return redirect()->route('portal.dashboard')
             ->with('success', 'Super Admin hesabınıza uğurla qayıtdınız.');
+    }
+
+    /**
+     * Delegated user managers (non system admins) may not touch system administrator accounts.
+     */
+    private function ensureCanManageUser(User $targetUser): void
+    {
+        if (! Auth::user()->isSystemAdmin() && $targetUser->isSystemAdmin()) {
+            abort(403, 'Sistem Administratorunun hesabını yalnız Baş Sistem Administratoru dəyişə bilər.');
+        }
+    }
+
+    /**
+     * Only system admins may grant the system_admin role or full-system permissions.
+     *
+     * @param  array<int, string>  $permissions
+     */
+    private function ensureCanAssignPrivileges(string $role, array $permissions): void
+    {
+        if (Auth::user()->isSystemAdmin()) {
+            return;
+        }
+
+        if ($role === 'system_admin' || array_intersect($permissions, ['system.all', 'roles.manage'])) {
+            abort(403, 'Sistem Administratoru rolunu və ya tam sistem icazələrini yalnız Baş Sistem Administratoru verə bilər.');
+        }
     }
 }

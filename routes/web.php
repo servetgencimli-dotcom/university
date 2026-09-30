@@ -17,8 +17,10 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LmsController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OfficeHoursController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\QrAttendanceController;
 use App\Http\Controllers\ResearchController;
 use App\Http\Controllers\StudentServicesController;
 use App\Http\Controllers\TranscriptController;
@@ -109,30 +111,39 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 
     // System Admin Full User, RBAC, DIM & CMS Management
-    Route::middleware('role:system_admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
-        Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
-        Route::post('/users/{id}/password', [AdminUserController::class, 'updatePassword'])->name('users.password');
-        Route::post('/users/{id}/permissions', [AdminUserController::class, 'updatePermissions'])->name('users.permissions');
-        Route::post('/impersonate/{id}', [AdminUserController::class, 'impersonate'])->name('impersonate');
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::middleware('role:system_admin,permission:users.manage,permission:roles.manage')->group(function () {
+            Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+            Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+            Route::post('/users/{id}/password', [AdminUserController::class, 'updatePassword'])->name('users.password');
+            Route::post('/users/{id}/permissions', [AdminUserController::class, 'updatePermissions'])->name('users.permissions');
+        });
+
+        Route::middleware('role:system_admin')->group(function () {
+            Route::post('/impersonate/{id}', [AdminUserController::class, 'impersonate'])->name('impersonate');
+
+            // Audit Logs
+            Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
+        });
 
         // DIM Candidate Admissions Registry
-        Route::get('/dim-candidates', [DimCandidateController::class, 'index'])->name('dim.index');
-        Route::post('/dim-candidates', [DimCandidateController::class, 'store'])->name('dim.store');
-        Route::post('/dim-candidates/{id}/accept', [DimCandidateController::class, 'acceptAsStudent'])->name('dim.accept');
-        Route::post('/dim-candidates/{id}/reject', [DimCandidateController::class, 'reject'])->name('dim.reject');
-
-        // Audit Logs
-        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs');
+        Route::middleware('role:system_admin,permission:admissions.manage')->group(function () {
+            Route::get('/dim-candidates', [DimCandidateController::class, 'index'])->name('dim.index');
+            Route::post('/dim-candidates', [DimCandidateController::class, 'store'])->name('dim.store');
+            Route::post('/dim-candidates/{id}/accept', [DimCandidateController::class, 'acceptAsStudent'])->name('dim.accept');
+            Route::post('/dim-candidates/{id}/reject', [DimCandidateController::class, 'reject'])->name('dim.reject');
+        });
 
         // CMS & Academic Management
-        Route::get('/cms', [AdminCmsController::class, 'index'])->name('cms.index');
-        Route::post('/cms/news', [AdminCmsController::class, 'storeNews'])->name('cms.news');
-        Route::post('/cms/events', [AdminCmsController::class, 'storeEvent'])->name('cms.events');
-        Route::post('/cms/courses', [AdminCmsController::class, 'storeCourse'])->name('cms.courses');
-        Route::post('/cms/sections', [AdminCmsController::class, 'storeSection'])->name('cms.sections');
-        Route::post('/cms/terms/{termId}/toggle', [AdminCmsController::class, 'toggleRegistration'])->name('cms.terms.toggle');
-        Route::post('/cms/terms/{termId}/current', [AdminCmsController::class, 'setCurrentTerm'])->name('cms.terms.set_current');
+        Route::middleware('role:system_admin,permission:cms.manage')->group(function () {
+            Route::get('/cms', [AdminCmsController::class, 'index'])->name('cms.index');
+            Route::post('/cms/news', [AdminCmsController::class, 'storeNews'])->name('cms.news');
+            Route::post('/cms/events', [AdminCmsController::class, 'storeEvent'])->name('cms.events');
+            Route::post('/cms/courses', [AdminCmsController::class, 'storeCourse'])->name('cms.courses');
+            Route::post('/cms/sections', [AdminCmsController::class, 'storeSection'])->name('cms.sections');
+            Route::post('/cms/terms/{termId}/toggle', [AdminCmsController::class, 'toggleRegistration'])->name('cms.terms.toggle');
+            Route::post('/cms/terms/{termId}/current', [AdminCmsController::class, 'setCurrentTerm'])->name('cms.terms.set_current');
+        });
     });
 
     // Convenient Aliases
@@ -155,10 +166,37 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
         Route::post('/grading/{sectionId}/template', [GradeDistributionController::class, 'applyDefaultTemplate'])->name('grading.components.template');
         Route::post('/grading/{sectionId}/scores', [GradeDistributionController::class, 'saveStudentScores'])->name('grading.scores.save');
 
+        // Analytics Dashboard & Risk Warning System (Sprint 1)
+        Route::get('/grading/{sectionId}/analytics', [GradeDistributionController::class, 'showAnalytics'])->name('grading.analytics');
+        Route::get('/grading/{sectionId}/risk', [GradeDistributionController::class, 'riskStudents'])->name('grading.risk');
+        Route::post('/grading/{sectionId}/risk/notify', [GradeDistributionController::class, 'notifyRiskStudents'])->name('grading.risk.notify');
+        Route::post('/grading/{sectionId}/risk/notify/{enrollmentId}', [GradeDistributionController::class, 'notifyOneRiskStudent'])->name('grading.risk.notify-one');
+        Route::get('/grading/{sectionId}/export', [GradeDistributionController::class, 'exportGrades'])->name('grading.export');
+
+        // Teacher Weekly Schedule Grid (Sprint 1)
+        Route::get('/teacher/schedule', [PortalController::class, 'teacherSchedule'])->name('teacher.schedule');
+
+        // Teacher Office Hours & Booking (Sprint 2)
+        Route::get('/teacher/office-hours', [OfficeHoursController::class, 'teacherIndex'])->name('teacher.office-hours');
+        Route::post('/teacher/office-hours/slot', [OfficeHoursController::class, 'storeSlot'])->name('teacher.office-hours.slot.store');
+        Route::delete('/teacher/office-hours/slot/{id}', [OfficeHoursController::class, 'destroySlot'])->name('teacher.office-hours.slot.delete');
+        Route::patch('/teacher/office-hours/booking/{id}', [OfficeHoursController::class, 'updateBookingStatus'])->name('teacher.office-hours.booking.status');
+
+        // QR Davamiyyət Kiosku (Sprint 2)
+        Route::get('/teacher/qr-kiosk/{sectionId}', [QrAttendanceController::class, 'kiosk'])->name('qr.kiosk');
+        Route::post('/teacher/qr-kiosk/{sectionId}/create', [QrAttendanceController::class, 'createSession'])->name('qr.session.create');
+
         // Review student appeals
         Route::get('/admin/appeals', [StudentServicesController::class, 'manageAppeals'])->name('admin.appeals.index');
         Route::post('/admin/appeals/{id}/respond', [StudentServicesController::class, 'respondAppeal'])->name('admin.appeals.respond');
     });
+
+    // Student Office Hours Booking & QR Checkin (Sprint 2)
+    Route::get('/student/office-hours', [OfficeHoursController::class, 'studentIndex'])->name('student.office-hours');
+    Route::post('/student/office-hours/book', [OfficeHoursController::class, 'storeBooking'])->name('student.office-hours.book');
+    Route::get('/qr/scan/{code}', [QrAttendanceController::class, 'scanCheckin'])->name('qr.scan');
+    Route::post('/qr/process/{code}', [QrAttendanceController::class, 'processCheckin'])->name('qr.process');
+    Route::get('/qr/status/{sessionId}', [QrAttendanceController::class, 'liveStatus'])->name('qr.status');
 
     // Admissions status mutation (protected by role middleware & policy)
     Route::post('/applications/{id}/status', [PortalController::class, 'updateApplicationStatus'])

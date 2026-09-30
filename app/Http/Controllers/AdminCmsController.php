@@ -6,7 +6,6 @@ use App\Models\AcademicTerm;
 use App\Models\ActivityLog;
 use App\Models\Course;
 use App\Models\CourseSection;
-use App\Models\Department;
 use App\Models\Event;
 use App\Models\Faculty;
 use App\Models\NewsArticle;
@@ -53,7 +52,7 @@ class AdminCmsController extends Controller
 
         $article = NewsArticle::create([
             'title' => $validated['title'],
-            'slug' => Str::slug($validated['title']) . '-' . rand(100, 999),
+            'slug' => Str::slug($validated['title']).'-'.rand(100, 999),
             'category' => $validated['category'],
             'summary' => $summary,
             'content' => $content,
@@ -92,7 +91,7 @@ class AdminCmsController extends Controller
 
         $event = Event::create([
             'title' => $validated['title'],
-            'slug' => Str::slug($validated['title']) . '-' . rand(100, 999),
+            'slug' => Str::slug($validated['title']).'-'.rand(100, 999),
             'category' => $validated['category'],
             'description' => $validated['description'],
             'speaker_names' => $validated['speaker_names'] ?? null,

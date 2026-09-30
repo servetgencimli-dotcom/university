@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\LetterGrade;
 use App\Http\Requests\UpdateApplicationStatusRequest;
 use App\Http\Requests\UpdateGradeRequest;
+use App\Models\AcademicTerm;
 use App\Models\AdmissionsApplication;
 use App\Models\CourseSection;
 use App\Models\Enrollment;
@@ -117,6 +118,28 @@ class PortalController extends Controller
         $myResearch = ResearchPaper::where('author_id', $user->id)->get();
 
         return view('portal.teacher', compact('user', 'taughtSections', 'advisedTheses', 'myResearch'));
+    }
+
+    /**
+     * Teacher weekly schedule grid — all sections sorted by day & time.
+     */
+    public function teacherSchedule()
+    {
+        $user = Auth::user();
+
+        if (! $user->isTeacher() && ! $user->isAdmin() && ! $user->isSystemAdmin()) {
+            abort(403);
+        }
+
+        $currentTerm = AcademicTerm::where('is_current', true)->first();
+        $termCode = $currentTerm?->code ?? '2026-Bahar';
+
+        $taughtSections = CourseSection::with(['course.program', 'enrollments.student'])
+            ->where('teacher_id', $user->id)
+            ->get()
+            ->sortBy('start_time');
+
+        return view('portal.teacher_schedule', compact('user', 'taughtSections', 'termCode'));
     }
 
     private function studentDashboard()

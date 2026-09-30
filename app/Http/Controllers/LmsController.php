@@ -84,7 +84,7 @@ class LmsController extends Controller
                 SystemNotification::send(
                     $enr->student,
                     "Yeni Tapşırıq: {$assignment->title}",
-                    "'{$section->course->name}' fənni üzrə yeni tapşırıq əlavə edildi. Son tarix: " . $assignment->due_date->format('d.m.Y H:i'),
+                    "'{$section->course->name}' fənni üzrə yeni tapşırıq əlavə edildi. Son tarix: ".$assignment->due_date->format('d.m.Y H:i'),
                     'assignment',
                     route('portal.lms.course', $section->id)
                 );
@@ -110,9 +110,9 @@ class LmsController extends Controller
         $filePath = null;
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $fileName = 'submission_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $fileName = 'submission_'.$user->id.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('uploads/submissions'), $fileName);
-            $filePath = 'uploads/submissions/' . $fileName;
+            $filePath = 'uploads/submissions/'.$fileName;
         }
 
         $submission = AssignmentSubmission::updateOrCreate(
@@ -195,9 +195,9 @@ class LmsController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $fileName = 'mat_' . time() . '_' . $file->getClientOriginalName();
+            $fileName = 'mat_'.time().'_'.$file->getClientOriginalName();
             $file->move(public_path('uploads/materials'), $fileName);
-            $pathOrUrl = 'uploads/materials/' . $fileName;
+            $pathOrUrl = 'uploads/materials/'.$fileName;
         }
 
         CourseMaterial::create([

@@ -222,13 +222,18 @@
                 </div>
                 <div style="overflow: hidden;">
                     <div style="font-size: 0.88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ Auth::user()->name }}</div>
-                    <div style="font-size: 0.75rem;">
+                    @if(Auth::user()->role_title)
+                        <div style="font-size: 0.75rem; color: #38bdf8; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.15rem;">
+                            {{ Auth::user()->role_title }}
+                        </div>
+                    @endif
+                    <div style="font-size: 0.72rem;">
                         @if(Auth::user()->role === 'system_admin')
                             <span class="badge badge-system"><i class="fa-solid fa-shield-halved"></i> Super Admin</span>
                         @elseif(Auth::user()->role === 'admin')
                             <span class="badge badge-admin"><i class="fa-solid fa-user-gear"></i> Məktəb Admini</span>
                         @elseif(Auth::user()->role === 'teacher')
-                            <span class="badge badge-teacher"><i class="fa-solid fa-chalkboard-user"></i> Professor</span>
+                            <span class="badge badge-teacher"><i class="fa-solid fa-chalkboard-user"></i> Müəllim</span>
                         @elseif(Auth::user()->role === 'master_student')
                             <span class="badge badge-master"><i class="fa-solid fa-user-graduate"></i> Magistrant</span>
                         @elseif(Auth::user()->role === 'student')
@@ -256,7 +261,7 @@
                 </a>
 
                 <!-- Student Nav -->
-                @if(Auth::user()->isStudent())
+                @if(Auth::user()->isStudent() || Auth::user()->isSystemAdmin())
                     <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Tələbə Portalı</div>
                     
                     <a href="{{ route('portal.schedule') }}" class="nav-link {{ request()->routeIs('portal.schedule*') ? 'active' : '' }}">
@@ -301,14 +306,59 @@
                     <a href="{{ route('portal.registration.index') }}" class="nav-link {{ request()->routeIs('portal.registration.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-book-bookmark text-purple-400"></i> Fənn Qeydiyyatı
                     </a>
+                    <a href="{{ route('portal.student.office-hours') }}" class="nav-link {{ request()->routeIs('portal.student.office-hours') ? 'active' : '' }}">
+                        <i class="fa-solid fa-calendar-check text-sky-400"></i> Müəllim Qəbuluna Yazıl
+                    </a>
                 @endif
 
                 <!-- Teacher Nav -->
-                @if(Auth::user()->isTeacher())
-                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #34d399; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Müəllim Nəzarəti</div>
-                    
+                @if(Auth::user()->isTeacher() || Auth::user()->isSystemAdmin())
+                    @php
+                        $tSectionId = Auth::user()->taughtSections()->first()?->id ?? 1;
+                    @endphp
+
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #34d399; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Cədvəl & Dərs Rejimi</div>
+
+                    <a href="{{ route('portal.teacher.schedule') }}" class="nav-link {{ request()->routeIs('portal.teacher.schedule') ? 'active' : '' }}">
+                        <i class="fa-solid fa-table-cells text-emerald-400"></i> Həftəlik Cədvəl Grid-i
+                    </a>
+
+                    <a href="{{ route('portal.qr.kiosk', $tSectionId) }}" class="nav-link {{ request()->routeIs('portal.qr.kiosk*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-qrcode text-sky-400"></i> QR Davamiyyət Kiosku
+                    </a>
+
+                    <a href="{{ route('portal.teacher.office-hours') }}" class="nav-link {{ request()->routeIs('portal.teacher.office-hours') ? 'active' : '' }}">
+                        <i class="fa-solid fa-comments text-cyan-400"></i> Qəbul Saatları (Office Hours)
+                    </a>
+
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #38bdf8; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Jurnal & Analitika</div>
+
+                    <a href="{{ route('portal.grading.show', $tSectionId) }}" class="nav-link {{ request()->routeIs('portal.grading.show*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-book-open-reader text-purple-400"></i> Elektron Qiymət Jurnalı
+                    </a>
+
+                    <a href="{{ route('portal.grading.analytics', $tSectionId) }}" class="nav-link {{ request()->routeIs('portal.grading.analytics*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-chart-pie text-blue-400"></i> Sinif Analitikası & Radarı
+                    </a>
+
+                    <a href="{{ route('portal.grading.risk', $tSectionId) }}" class="nav-link {{ request()->routeIs('portal.grading.risk*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-400"></i> Akademik Risk Xəbərdarlığı
+                    </a>
+
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #f59e0b; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">LMS & Apellyasiya</div>
+
+                    <a href="{{ route('portal.lms.course', $tSectionId) }}" class="nav-link {{ request()->routeIs('portal.lms.course*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-laptop-code text-teal-400"></i> LMS İnteraktiv Otaq
+                    </a>
+
                     <a href="{{ route('portal.admin.appeals.index') }}" class="nav-link {{ request()->routeIs('portal.admin.appeals.*') ? 'active' : '' }}">
                         <i class="fa-solid fa-inbox text-amber-400"></i> Tələbə Apellyasiyaları
+                    </a>
+
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #a855f7; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Elmi Fəaliyyət</div>
+
+                    <a href="{{ route('research.index') }}" class="nav-link {{ request()->routeIs('research.*') ? 'active' : '' }}">
+                        <i class="fa-solid fa-microscope text-fuchsia-400"></i> Elmi Məqalələr & Nəşrlər
                     </a>
                 @endif
 
@@ -349,6 +399,45 @@
                     <a href="{{ route('portal.dashboard', ['view_as' => 'admin']) }}" class="nav-link {{ request('view_as') === 'admin' ? 'active' : '' }}">
                         <i class="fa-solid fa-user-gear"></i> Məktəb Dekan Paneli
                     </a>
+                @endif
+
+                <!-- Granular Custom Permissions Nav (For non-system-admin users who were granted explicit permissions) -->
+                @php
+                    $hasCustomAdminPerms = !Auth::user()->isSystemAdmin() && (
+                        Auth::user()->hasPermission('users.manage') ||
+                        Auth::user()->hasPermission('roles.manage') ||
+                        Auth::user()->hasPermission('admissions.manage') ||
+                        Auth::user()->hasPermission('cms.manage') ||
+                        Auth::user()->hasPermission('system.all')
+                    );
+                @endphp
+
+                @if($hasCustomAdminPerms)
+                    <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #a855f7; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Xüsusi İcazələr & Modul Girişi</div>
+                    
+                    @if(Auth::user()->hasPermission('users.manage') || Auth::user()->hasPermission('roles.manage') || Auth::user()->hasPermission('system.all'))
+                        <a href="{{ route('portal.admin.users.index') }}" class="nav-link {{ request()->routeIs('portal.admin.users.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-users-gear text-red-400"></i> İstifadəçilər & İcazələr
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('admissions.manage') || Auth::user()->hasPermission('system.all'))
+                        <a href="{{ route('portal.admin.dim.index') }}" class="nav-link {{ request()->routeIs('portal.admin.dim.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-file-signature text-amber-400"></i> DİM Qəbul Reyestri
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('cms.manage') || Auth::user()->hasPermission('system.all'))
+                        <a href="{{ route('portal.admin.cms.index') }}" class="nav-link {{ request()->routeIs('portal.admin.cms.*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-sliders text-indigo-400"></i> CMS & Semestrlər
+                        </a>
+                    @endif
+
+                    @if(Auth::user()->hasPermission('system.all'))
+                        <a href="{{ route('portal.admin.audit-logs') }}" class="nav-link {{ request()->routeIs('portal.admin.audit-logs*') ? 'active' : '' }}">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Audit & Təhlükəsizlik Jurnalı
+                        </a>
+                    @endif
                 @endif
                 
                 <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.08em; margin-top: 1rem; margin-bottom: 0.4rem; padding-left: 0.5rem;">Sürətli Keçid</div>
@@ -394,6 +483,16 @@
             </div>
 
             <div style="display: flex; align-items: center; gap: 1rem;">
+                <div class="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-slate-100/80 rounded-xl border border-slate-200">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center shadow-sm">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+                    <div class="text-xs text-left">
+                        <div class="font-bold text-slate-800 leading-tight">{{ Auth::user()->name }}</div>
+                        <div class="text-blue-600 font-semibold text-[10px] leading-tight">{{ Auth::user()->role_title ?? Auth::user()->role }}</div>
+                    </div>
+                </div>
+
                 <a href="{{ route('portal.notifications.index') }}" class="relative p-2 text-slate-500 hover:text-blue-600 transition rounded-xl hover:bg-slate-100" title="Bildirişlər">
                     <i class="fa-solid fa-bell text-lg"></i>
                     @if(Auth::user()->unreadNotificationsCount() > 0)
