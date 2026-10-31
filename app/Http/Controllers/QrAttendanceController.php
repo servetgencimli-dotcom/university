@@ -19,7 +19,7 @@ class QrAttendanceController extends Controller
         $section = CourseSection::with(['course', 'enrollments.student'])->findOrFail($sectionId);
 
         // Security check
-        if (Auth::user()->isTeacher() && $section->teacher_id !== Auth::id()) {
+        if (Auth::user()->cannot('kiosk', $section)) {
             abort(403, 'Siz yalnız öz dərsiniz üçün QR Kiosk aça bilərsiniz.');
         }
 
@@ -59,7 +59,7 @@ class QrAttendanceController extends Controller
     {
         $section = CourseSection::findOrFail($sectionId);
 
-        if (Auth::user()->isTeacher() && $section->teacher_id !== Auth::id()) {
+        if (Auth::user()->cannot('kiosk', $section)) {
             abort(403);
         }
 
@@ -88,7 +88,7 @@ class QrAttendanceController extends Controller
         $session = AttendanceQrSession::with('courseSection.enrollments.student')->findOrFail($sessionId);
         $user = Auth::user();
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $session->courseSection->teacher_id !== $user->id) {
+        if ($user->cannot('kiosk', $session->courseSection)) {
             abort(403, 'Bu QR sessiyasının canlı statusuna baxış icazəniz yoxdur.');
         }
 
@@ -111,8 +111,14 @@ class QrAttendanceController extends Controller
             ];
         });
 
+        // Rotating token every 30 seconds for security
+        if ($session->updated_at && $session->updated_at->diffInSeconds(now()) >= 30) {
+            $session->update(['session_code' => bin2hex(random_bytes(16))]);
+        }
+
         return response()->json([
             'session_code' => $session->session_code,
+            'scan_url' => route('portal.qr.scan', $session->session_code),
             'is_active' => $session->is_active && $session->expires_at->isFuture(),
             'expires_at' => $session->expires_at->toIso8601String(),
             'total_students' => $enrollments->count(),

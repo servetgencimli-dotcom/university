@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOfficeHourSlotRequest;
 use App\Models\Enrollment;
 use App\Models\OfficeHourBooking;
 use App\Models\OfficeHourSlot;
@@ -40,18 +41,9 @@ class OfficeHoursController extends Controller
     /**
      * Teacher: Create new office hour slot
      */
-    public function storeSlot(Request $request)
+    public function storeSlot(StoreOfficeHourSlotRequest $request)
     {
-        $validated = $request->validate([
-            'day_of_week' => 'required|string',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'slot_duration_minutes' => 'required|integer|min:5|max:120',
-            'max_students_per_slot' => 'required|integer|min:1|max:10',
-            'location' => 'nullable|string|max:255',
-            'zoom_link' => 'nullable|url|max:255',
-            'is_recurring' => 'nullable|boolean',
-        ]);
+        $validated = $request->validated();
 
         $validated['teacher_id'] = Auth::id();
         $validated['is_recurring'] = $request->has('is_recurring');

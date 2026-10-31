@@ -220,16 +220,14 @@
     </div>
 
     <script>
-        const sessionCode = "{{ $session->session_code }}";
-        const sessionId = "{{ $session->id }}";
-        const scanUrl = "{{ route('portal.qr.scan', $session->session_code) }}";
+        let currentScanUrl = "{{ route('portal.qr.scan', $session->session_code) }}";
         const statusUrl = "{{ route('portal.qr.status', $session->id) }}";
 
-        document.getElementById('scanUrlDisplay').innerText = scanUrl;
+        document.getElementById('scanUrlDisplay').innerText = currentScanUrl;
 
         // Render QR Code
-        new QRCode(document.getElementById("qrcode"), {
-            text: scanUrl,
+        const qrCodeInstance = new QRCode(document.getElementById("qrcode"), {
+            text: currentScanUrl,
             width: 240,
             height: 240,
             colorDark : "#0f172a",
@@ -242,6 +240,14 @@
             try {
                 const response = await fetch(statusUrl);
                 const data = await response.json();
+
+                // Rotate QR code dynamically if scan_url changed
+                if (data.scan_url && data.scan_url !== currentScanUrl) {
+                    currentScanUrl = data.scan_url;
+                    document.getElementById('scanUrlDisplay').innerText = currentScanUrl;
+                    qrCodeInstance.clear();
+                    qrCodeInstance.makeCode(currentScanUrl);
+                }
 
                 // Update counts
                 document.getElementById('presentRatioText').innerText = `${data.present_count} / ${data.total_students}`;

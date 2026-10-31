@@ -195,7 +195,7 @@ Route::middleware('auth')->prefix('portal')->name('portal.')->group(function () 
     Route::get('/student/office-hours', [OfficeHoursController::class, 'studentIndex'])->name('student.office-hours');
     Route::post('/student/office-hours/book', [OfficeHoursController::class, 'storeBooking'])->name('student.office-hours.book');
     Route::get('/qr/scan/{code}', [QrAttendanceController::class, 'scanCheckin'])->name('qr.scan');
-    Route::post('/qr/process/{code}', [QrAttendanceController::class, 'processCheckin'])->name('qr.process');
+    Route::post('/qr/process/{code}', [QrAttendanceController::class, 'processCheckin'])->middleware('throttle:10,1')->name('qr.process');
     Route::get('/qr/status/{sessionId}', [QrAttendanceController::class, 'liveStatus'])->name('qr.status');
 
     // Admissions status mutation (protected by role middleware & policy)

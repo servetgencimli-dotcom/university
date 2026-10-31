@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\LetterGrade;
+use App\Http\Requests\SaveGradeComponentsRequest;
 use App\Models\CourseSection;
 use App\Models\Enrollment;
 use App\Models\GradeComponent;
@@ -32,7 +33,7 @@ class GradeDistributionController extends Controller
         ])->findOrFail($sectionId);
 
         // Security check: only the assigned teacher or admins can manage
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'Bu fənnin qiymətləndirmə jurnalına baxış icazəniz yoxdur.');
         }
 
@@ -46,22 +47,16 @@ class GradeDistributionController extends Controller
     /**
      * Save / Update grade components (Bal bölgüsü)
      */
-    public function saveComponents(Request $request, $sectionId)
+    public function saveComponents(SaveGradeComponentsRequest $request, $sectionId)
     {
         $user = Auth::user();
         $section = CourseSection::findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
-        $validated = $request->validate([
-            'components' => 'required|array|min:1',
-            'components.*.id' => 'nullable|integer',
-            'components.*.name' => 'required|string|max:100',
-            'components.*.max_score' => 'required|numeric|min:0.5|max:100',
-            'components.*.type' => 'nullable|string|max:50',
-        ]);
+        $validated = $request->validated();
 
         $submittedIds = [];
         $orderIndex = 0;
@@ -117,7 +112,7 @@ class GradeDistributionController extends Controller
         $user = Auth::user();
         $section = CourseSection::findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
@@ -155,7 +150,7 @@ class GradeDistributionController extends Controller
         $user = Auth::user();
         $section = CourseSection::with(['gradeComponents', 'enrollments.student'])->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
@@ -242,7 +237,7 @@ class GradeDistributionController extends Controller
             'enrollments.student',
         ])->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'Bu fənnin analitika panelinə baxış icazəniz yoxdur.');
         }
 
@@ -261,7 +256,7 @@ class GradeDistributionController extends Controller
             'enrollments.student',
         ])->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
@@ -276,7 +271,7 @@ class GradeDistributionController extends Controller
         $user = Auth::user();
         $section = CourseSection::with(['course', 'enrollments.student'])->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
@@ -315,7 +310,7 @@ class GradeDistributionController extends Controller
         $user = Auth::user();
         $section = CourseSection::with('course')->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 
@@ -347,7 +342,7 @@ class GradeDistributionController extends Controller
         $user = Auth::user();
         $section = CourseSection::with(['course', 'enrollments.student'])->findOrFail($sectionId);
 
-        if (! $user->isSystemAdmin() && ! $user->isAdmin() && $section->teacher_id !== $user->id) {
+        if ($user->cannot('manage', $section)) {
             abort(403, 'İcazəniz yoxdur.');
         }
 

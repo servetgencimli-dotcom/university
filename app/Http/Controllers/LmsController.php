@@ -36,7 +36,7 @@ class LmsController extends Controller
             ->where('student_id', $user->id)
             ->exists();
 
-        if (! $isTeacherOrAdmin && ! $isEnrolled) {
+        if ($user->cannot('viewLms', $section)) {
             abort(403, 'Bu fənnin LMS otağına yalnız fənnin tələbələri və müəllimi daxil ola bilər.');
         }
 
@@ -59,7 +59,7 @@ class LmsController extends Controller
         $user = Auth::user();
         $section = CourseSection::findOrFail($sectionId);
 
-        if ($section->teacher_id !== $user->id && ! $user->isAdmin()) {
+        if ($user->cannot('manage', $section)) {
             abort(403);
         }
 
@@ -144,7 +144,7 @@ class LmsController extends Controller
         $user = Auth::user();
         $submission = AssignmentSubmission::with(['assignment.courseSection', 'student'])->findOrFail($submissionId);
 
-        if ($submission->assignment->courseSection->teacher_id !== $user->id && ! $user->isAdmin()) {
+        if ($user->cannot('manage', $submission->assignment->courseSection)) {
             abort(403);
         }
 
@@ -180,7 +180,7 @@ class LmsController extends Controller
         $user = Auth::user();
         $section = CourseSection::findOrFail($sectionId);
 
-        if ($section->teacher_id !== $user->id && ! $user->isAdmin()) {
+        if ($user->cannot('manage', $section)) {
             abort(403);
         }
 
@@ -219,7 +219,7 @@ class LmsController extends Controller
         $user = Auth::user();
         $section = CourseSection::findOrFail($sectionId);
 
-        if ($section->teacher_id !== $user->id && ! $user->isAdmin()) {
+        if ($user->cannot('manage', $section)) {
             abort(403);
         }
 
